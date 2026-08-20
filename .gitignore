@@ -1,0 +1,111 @@
+# =============================================================================
+# Canon i9950 driver — gitignore
+# =============================================================================
+
+# --- Build outputs (project) -------------------------------------------------
+/build/
+
+# Object files & libraries
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.lib
+*.dylib
+*.so
+*.so.*
+*.d
+
+# macOS / iOS binaries
+*.app
+*.ipa
+*.dSYM/
+*.suo
+*.exe
+
+# Installers produced locally (unsigned dev packages)
+*.pkg
+*.dmg
+
+# --- USB capture data (binary, may contain print content) --------------------
+captures/**/*
+!captures/README.md
+
+# --- Third-party dependencies ------------------------------------------------
+# Vendored via clone; see third_party/README.md and `make deps`.
+# Do not commit nested upstream repos or their build trees.
+/third_party/*
+!/third_party/README.md
+
+# --- Autotools / CMake (upstream build systems) ------------------------------
+autom4te.cache/
+/config.log
+/config.status
+/config.cache
+/config.h
+/config.h.in
+/stamp-h1
+Makefile.in
+/Makedefs
+/aclocal.m4
+/compile
+/depcomp
+/install-sh
+/missing
+/ltmain.sh
+/libtool
+**/.deps/
+**/.libs/
+**/config.status
+**/config.log
+**/config.h
+**/Makedefs
+**/stamp-h*
+
+# --- macOS -------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+*.icloud
+
+# --- Editors & IDEs ----------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# --- Python (capture/normalize tools) ----------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+
+# --- Logs & temp -------------------------------------------------------------
+*.log
+*.tmp
+*.temp
+/tmp/
+
+# --- Secrets (never commit) --------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# --- Cursor / local agent state (if present) ---------------------------------
+.cursor/

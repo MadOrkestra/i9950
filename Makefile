@@ -1,0 +1,98 @@
+# Canon i9950 macOS Printer Application
+#
+# Copyright (C) 2026 i9950 driver project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+VERSION     ?= 0.1.0
+ARCH        ?= arm64
+BUILD_DIR   ?= build
+PAPPL_DIR   := third_party/pappl
+GUTEN_DIR   := third_party/gutenprint
+GP_LIB      := $(GUTEN_DIR)/src/main/.libs/libgutenprint.a
+PAPPL_LIB   := $(PAPPL_DIR)/pappl/libpappl.a
+
+GP_INC      := -I$(GUTEN_DIR)/include -I$(GUTEN_DIR)
+PAPPL_INC   := -I$(PAPPL_DIR)/pappl -I$(PAPPL_DIR)
+CUPS_CFLAGS := $(shell cups-config --cflags 2>/dev/null)
+CUPS_LIBS   := $(shell cups-config --image --libs 2>/dev/null)
+
+CFLAGS      += -std=gnu23 -Wall -Wextra -O2 -arch $(ARCH) \
+              -Iinclude -Isrc $(GP_INC) $(PAPPL_INC) $(CUPS_CFLAGS) \
+              -I/opt/homebrew/opt/libusb/include \
+              -DI9950_VERSION=\"$(VERSION)\"
+LDFLAGS     += -arch $(ARCH)
+LIBS        += $(PAPPL_LIB) $(GP_LIB) $(CUPS_LIBS) \
+              -framework AppKit -framework CoreFoundation \
+              -framework SystemConfiguration -framework IOKit \
+              -L/opt/homebrew/opt/jpeg-turbo/lib -ljpeg \
+              -L/opt/homebrew/opt/libpng/lib -lpng16 -lz \
+              -L/opt/homebrew/opt/libusb/lib -lusb-1.0 \
+              -L/opt/homebrew/opt/openssl@3/lib -lssl -lcrypto \
+              -liconv -lm -lpthread -lpam
+
+APP_SRCS    := src/i9950-printer-app.c \
+               src/pappl/i9950_driver.c \
+               src/canon/gp_encoder.c \
+               src/canon/usb_flush.c
+
+TOOL_SRCS   := src/tools/i9950-tool.c
+
+TEST_SRCS   := test/test_usb_flush.c
+
+APP_OBJS    := $(patsubst %.c,$(BUILD_DIR)/%.o,$(APP_SRCS))
+TOOL_OBJS   := $(patsubst %.c,$(BUILD_DIR)/%.o,$(TOOL_SRCS))
+TEST_OBJS   := $(patsubst %.c,$(BUILD_DIR)/%.o,$(TEST_SRCS))
+
+.PHONY: all clean deps pappl gutenprint test install \
+        normalize-capture run-tests package
+
+all: deps $(BUILD_DIR)/i9950-printer-app $(BUILD_DIR)/i9950-tool
+
+deps: pappl gutenprint
+
+pappl:
+	@test -f $(PAPPL_LIB) || $(MAKE) -C $(PAPPL_DIR) pappl/libpappl.a
+
+gutenprint:
+	@test -f $(GP_LIB) || ( \
+	  export PATH="/opt/homebrew/opt/libtool/libexec/gnubin:/opt/homebrew/opt/gettext/bin:$$PATH" && \
+	  test -f $(GUTEN_DIR)/configure || (cd $(GUTEN_DIR) && ./autogen.sh) && \
+	  cd $(GUTEN_DIR) && \
+	  test -f config.status || ./configure --disable-nls --without-cups --without-gui --without-gimp --without-escputil --without-foomatic --without-cups-ppd-utils --disable-doc && \
+	  $(MAKE) -C src/main )
+
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(BUILD_DIR)/i9950-printer-app: $(APP_OBJS) $(PAPPL_LIB) $(GP_LIB)
+	$(CC) $(LDFLAGS) -o $@ $(APP_OBJS) $(LIBS)
+
+$(BUILD_DIR)/i9950-tool: $(TOOL_OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(TOOL_OBJS) \
+	  -L/opt/homebrew/opt/libusb/lib -lusb-1.0
+
+test: $(BUILD_DIR)/test_usb_flush
+	$(BUILD_DIR)/test_usb_flush
+
+$(BUILD_DIR)/test_usb_flush: $(TEST_OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(TEST_OBJS)
+
+install: all
+	install -d $(DESTDIR)/usr/local/bin
+	install -m 755 $(BUILD_DIR)/i9950-printer-app $(DESTDIR)/usr/local/bin/
+	install -m 755 $(BUILD_DIR)/i9950-tool $(DESTDIR)/usr/local/bin/
+	install -d $(DESTDIR)/Library/LaunchAgents
+	install -m 644 packaging/macos/com.i9950.printer-app.plist $(DESTDIR)/Library/LaunchAgents/
+
+normalize-capture:
+	python3 tools/normalize_capture.py $(CAP)
+
+run-tests: all test
+	./scripts/run-tests.sh
+
+package: all
+	./packaging/macos/build-pkg.sh
+
+clean:
+	rm -rf $(BUILD_DIR)
