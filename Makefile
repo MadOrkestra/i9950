@@ -19,7 +19,8 @@ CUPS_LIBS   := $(shell cups-config --image --libs 2>/dev/null)
 CFLAGS      += -std=gnu23 -Wall -Wextra -O2 -arch $(ARCH) \
               -Iinclude -Isrc $(GP_INC) $(PAPPL_INC) $(CUPS_CFLAGS) \
               -I/opt/homebrew/opt/libusb/include \
-              -DI9950_VERSION=\"$(VERSION)\"
+              -DI9950_VERSION=\"$(VERSION)\" \
+              -DI9950_GUTENPRINT_XMLDIR=\"$(abspath $(GUTEN_DIR)/src/xml)\"
 LDFLAGS     += -arch $(ARCH)
 LIBS        += $(PAPPL_LIB) $(GP_LIB) $(CUPS_LIBS) \
               -framework AppKit -framework CoreFoundation \
@@ -51,7 +52,10 @@ all: deps $(BUILD_DIR)/i9950-printer-app $(BUILD_DIR)/i9950-tool
 deps: pappl gutenprint
 
 pappl:
-	@test -f $(PAPPL_LIB) || $(MAKE) -C $(PAPPL_DIR) pappl/libpappl.a
+	@test -f $(PAPPL_LIB) || ( \
+	  export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig:/opt/homebrew/opt/jpeg-turbo/lib/pkgconfig:/opt/homebrew/opt/libpng/lib/pkgconfig:/opt/homebrew/opt/libusb/lib/pkgconfig:$$PKG_CONFIG_PATH" && \
+	  test -f $(PAPPL_DIR)/Makedefs || (cd $(PAPPL_DIR) && ./configure --disable-shared) && \
+	  $(MAKE) -C $(PAPPL_DIR)/pappl libpappl.a )
 
 gutenprint:
 	@test -f $(GP_LIB) || ( \

@@ -31,7 +31,7 @@ make test    # unit tests (no printer needed)
 ## Run (development)
 
 ```bash
-./build/i9950-printer-app serve
+./build/i9950-printer-app server
 ```
 
 Then add the printer in **System Settings → Printers** (should appear via IPP/Bonjour on localhost).

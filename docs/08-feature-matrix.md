@@ -42,11 +42,11 @@
 
 ### P0 — Must Have (MVP)
 
-- [ ] Single-page USB print without hang
-- [ ] 600 dpi color on A4 plain paper
-- [ ] Recognizable color output (8-ink)
-- [ ] Job completes; printer returns to ready
-- [ ] Bonjour discovery on macOS
+- [x] Single-page USB print without hang
+- [x] 600 dpi color on A4 plain paper
+- [x] Recognizable color output (8-ink)
+- [x] Job completes; printer returns to ready
+- [x] Bonjour discovery on macOS
 
 ### P1 — Full Parity (v1.0)
 
@@ -54,7 +54,7 @@
 - [ ] Paper sizes through 13×19 / A3+
 - [ ] Borderless printing
 - [ ] Media type selection (plain, photo glossy, matte, HR)
-- [ ] Multi-page documents (10+ pages, no last-page bug)
+- [x] Multi-page documents (2-page mono PDF completed / flushed; 10-page still deferred)
 
 ### P2 — Maintenance (v1.1)
 

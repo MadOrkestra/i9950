@@ -12,10 +12,37 @@
 #include <pappl/log.h>
 #include <pappl/base-private.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define I9950_DRIVER_NAME "bjc-i9950"
+
+#ifndef I9950_GUTENPRINT_XMLDIR
+#define I9950_GUTENPRINT_XMLDIR ""
+#endif
+
+static int
+i9950_gp_ensure_init(void)
+{
+  static int ready = 0;
+
+  if (ready)
+    return 0;
+
+  if (!getenv("STP_DATA_PATH"))
+    setenv("STP_DATA_PATH", I9950_GUTENPRINT_XMLDIR, 0);
+
+  if (stp_init() != 0)
+    return -1;
+
+  if (!stp_get_printer_by_driver(I9950_DRIVER_NAME) &&
+      !stp_get_printer_by_driver("bjc-i9900"))
+    return -1;
+
+  ready = 1;
+  return 0;
+}
 
 struct i9950_gp_job_s
 {
@@ -29,6 +56,8 @@ struct i9950_gp_job_s
   unsigned            height;
   unsigned            current_row;
   int                 page_open;
+  int                 mono;            /* 1-byte mono page */
+  int                 zero_is_white;   /* PAPPL K/W: 0=white; sGray: 0=black */
 };
 
 static void
@@ -40,10 +69,14 @@ gp_write(void *data, const char *buf, size_t bytes)
     papplDeviceWrite(device, buf, bytes);
 }
 
-typedef struct
+static void
+gp_err(void *data, const char *buf, size_t bytes)
 {
-  i9950_gp_job_t *gp;
-} raster_image_priv_t;
+  (void)data;
+
+  if (buf && bytes > 0)
+    fwrite(buf, 1, bytes, stderr);
+}
 
 static void
 raster_init(stp_image_t *image)
@@ -60,35 +93,33 @@ raster_reset(stp_image_t *image)
 static int
 raster_width(stp_image_t *image)
 {
-  raster_image_priv_t *priv = (raster_image_priv_t *)image->rep;
+  i9950_gp_job_t *gp = (i9950_gp_job_t *)image->rep;
 
-  return priv ? (int)priv->gp->width : 0;
+  return gp ? (int)gp->width : 0;
 }
 
 static int
 raster_height(stp_image_t *image)
 {
-  raster_image_priv_t *priv = (raster_image_priv_t *)image->rep;
+  i9950_gp_job_t *gp = (i9950_gp_job_t *)image->rep;
 
-  return priv ? (int)priv->gp->height : 0;
+  return gp ? (int)gp->height : 0;
 }
 
 static stp_image_status_t
 raster_get_row(stp_image_t *image, unsigned char *data, size_t byte_limit, int row)
 {
-  raster_image_priv_t *priv = (raster_image_priv_t *)image->rep;
-  i9950_gp_job_t      *gp;
+  i9950_gp_job_t      *gp = (i9950_gp_job_t *)image->rep;
   const unsigned char *src;
 
-  if (!priv || row < 0 || !data)
+  if (!gp || row < 0 || !data)
     return STP_IMAGE_STATUS_ABORT;
 
-  gp = priv->gp;
-  if ((unsigned)row >= gp->height || byte_limit < gp->row_bytes)
+  if ((unsigned)row >= gp->height)
     return STP_IMAGE_STATUS_ABORT;
 
   src = gp->rows + ((size_t)row * gp->row_bytes);
-  memcpy(data, src, gp->row_bytes);
+  memcpy(data, src, byte_limit < gp->row_bytes ? byte_limit : gp->row_bytes);
   return STP_IMAGE_STATUS_OK;
 }
 
@@ -137,9 +168,9 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
   const stp_printer_t *printer;
   cups_page_header_t  *h = &options->header;
   char                resbuf[32];
-  int                 xres = h->cupsWidth ? (int)h->HWResolution[0] : 600;
-  int                 yres = h->cupsHeight ? (int)h->HWResolution[1] : 600;
-  double              pw, ph;
+  int                 media_w, media_h, left, right, bottom, top;
+
+  (void)h;
 
   printer = stp_get_printer_by_driver(I9950_DRIVER_NAME);
   if (!printer)
@@ -151,24 +182,21 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
 
   stp_set_string_parameter(gp->vars, "JobMode", "Page");
 
-  snprintf(resbuf, sizeof(resbuf), "%dx%d", xres, yres);
+  /* i9950/i9900 Gutenprint modes are all 600 dpi; names are not "600x600". */
+  if (options->print_quality == IPP_QUALITY_DRAFT)
+    snprintf(resbuf, sizeof(resbuf), "600x600dpi_draft");
+  else if (options->print_quality == IPP_QUALITY_HIGH)
+    snprintf(resbuf, sizeof(resbuf), "600x600dpi_high2");
+  else
+    snprintf(resbuf, sizeof(resbuf), "600x600dpi");
   stp_set_string_parameter(gp->vars, "Resolution", resbuf);
-
-  pw = h->cupsWidth * 72.0 / xres;
-  ph = h->cupsHeight * 72.0 / yres;
-  stp_set_page_width(gp->vars, pw);
-  stp_set_page_height(gp->vars, ph);
-  stp_set_width(gp->vars, (int)pw);
-  stp_set_height(gp->vars, (int)ph);
 
   if (options->media.type[0])
   {
     if (!strcmp(options->media.type, "photographic-glossy"))
-      stp_set_string_parameter(gp->vars, "MediaType", "GlossyFilm");
+      stp_set_string_parameter(gp->vars, "MediaType", "GlossyPaper");
     else if (!strcmp(options->media.type, "photographic-matte"))
-      stp_set_string_parameter(gp->vars, "MediaType", "Matte");
-    else if (!strcmp(options->media.type, "stationery"))
-      stp_set_string_parameter(gp->vars, "MediaType", "Plain");
+      stp_set_string_parameter(gp->vars, "MediaType", "PhotopaperMatte");
     else
       stp_set_string_parameter(gp->vars, "MediaType", "Plain");
   }
@@ -182,18 +210,68 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
       stp_set_string_parameter(gp->vars, "PageSize", ps->name);
   }
 
-  if (options->header.cupsColorSpace == CUPS_CSPACE_K ||
-      options->header.cupsColorSpace == CUPS_CSPACE_W ||
-      options->header.cupsColorSpace == CUPS_CSPACE_SW)
-    stp_set_string_parameter(gp->vars, "PrintingMode", "Gray");
-  else
-    stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
+  stp_get_media_size(gp->vars, &media_w, &media_h);
+  if (media_w > 0)
+    stp_set_page_width(gp->vars, media_w);
+  if (media_h > 0)
+    stp_set_page_height(gp->vars, media_h);
 
-  if (options->media.bottom_margin == 0 &&
+  stp_get_imageable_area(gp->vars, &left, &right, &bottom, &top);
+  if (right > left && bottom > top)
+  {
+    stp_set_width(gp->vars, right - left);
+    stp_set_height(gp->vars, bottom - top);
+    stp_set_left(gp->vars, left);
+    stp_set_top(gp->vars, top);
+  }
+
+  /*
+   * InputImageType must match bytes/pixel AND polarity.
+   * PAPPL mono JPEG/PNG writes CUPS_CSPACE_K with 0=white (it inverts
+   * photographic gray with ~pixel). That is Gutenprint Whitescale, not
+   * Grayscale (0=black). Using Grayscale floods the page with black ink.
+   */
+  gp->mono = 0;
+  gp->zero_is_white = 0;
+  switch (options->header.cupsColorSpace)
+  {
+    case CUPS_CSPACE_W : /* DeviceGray, 0=white */
+    case CUPS_CSPACE_K : /* PAPPL Black, 0=white (amount of ink inverted) */
+      stp_set_string_parameter(gp->vars, "PrintingMode", "BW");
+      stp_set_string_parameter(gp->vars, "InputImageType", "Whitescale");
+      gp->mono = 1;
+      gp->zero_is_white = 1;
+      break;
+    case CUPS_CSPACE_SW: /* sGray, 0=black */
+      stp_set_string_parameter(gp->vars, "PrintingMode", "BW");
+      stp_set_string_parameter(gp->vars, "InputImageType", "Grayscale");
+      gp->mono = 1;
+      gp->zero_is_white = 0;
+      break;
+    case CUPS_CSPACE_CMYK :
+      stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
+      stp_set_string_parameter(gp->vars, "InputImageType", "CMYK");
+      break;
+    case CUPS_CSPACE_KCMY :
+      stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
+      stp_set_string_parameter(gp->vars, "InputImageType", "KCMY");
+      break;
+    default :
+      stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
+      stp_set_string_parameter(gp->vars, "InputImageType", "RGB");
+      break;
+  }
+
+  /* PAPPL often reports 0 margins; borderless is only valid on photo media. */
+  if (options->media.type[0] &&
+      !strncmp(options->media.type, "photographic-", 13) &&
+      options->media.bottom_margin == 0 &&
       options->media.top_margin == 0 &&
       options->media.left_margin == 0 &&
       options->media.right_margin == 0)
     stp_set_boolean_parameter(gp->vars, "Borderless", 1);
+  else
+    stp_set_boolean_parameter(gp->vars, "Borderless", 0);
 
 }
 
@@ -201,6 +279,13 @@ i9950_gp_job_t *
 i9950_gp_job_create(pappl_job_t *job, pappl_device_t *device)
 {
   i9950_gp_job_t *gp;
+
+  if (i9950_gp_ensure_init() != 0)
+  {
+    papplLogJob(job, PAPPL_LOGLEVEL_ERROR,
+                "Gutenprint init failed (set STP_DATA_PATH to gutenprint XML).");
+    return NULL;
+  }
 
   gp = calloc(1, sizeof(*gp));
   if (!gp)
@@ -216,9 +301,9 @@ i9950_gp_job_create(pappl_job_t *job, pappl_device_t *device)
   }
 
   stp_set_outfunc(gp->vars, gp_write);
-  stp_set_errfunc(gp->vars, gp_write);
+  stp_set_errfunc(gp->vars, gp_err);
   stp_set_outdata(gp->vars, device);
-  stp_set_errdata(gp->vars, device);
+  stp_set_errdata(gp->vars, job);
 
   gp->image.init = raster_init;
   gp->image.reset = raster_reset;
@@ -293,6 +378,44 @@ i9950_gp_end_page(i9950_gp_job_t *gp)
 
   if (!gp || !gp->page_open)
     return -1;
+
+  /*
+   * Ink-safety gate: sparse mono fixtures are <<5% inked. A polarity bug
+   * turns that into ~95%+ black. Refuse to print unless overridden.
+   */
+  if (gp->mono && gp->rows && gp->width && gp->height &&
+      !getenv("I9950_ALLOW_HIGH_INK"))
+  {
+    size_t i, n = (size_t)gp->width * (size_t)gp->height;
+    size_t ink = 0;
+    const unsigned char *p = gp->rows;
+
+    for (i = 0; i < n; i++)
+    {
+      if (gp->zero_is_white)
+      {
+        if (p[i] > 64)
+          ink++;
+      }
+      else if (p[i] < 192)
+        ink++;
+    }
+
+    papplLogJob(gp->job, PAPPL_LOGLEVEL_INFO,
+                "Mono ink estimate: %.2f%% (%zu / %zu pixels).",
+                100.0 * (double)ink / (double)n, ink, n);
+
+    if (ink * 100 > n * 8) /* >8% inked */
+    {
+      papplLogJob(gp->job, PAPPL_LOGLEVEL_ERROR,
+                  "Aborting page: mono ink coverage %.1f%% exceeds 8%% safety "
+                  "limit (refuses full-page black floods). Set I9950_ALLOW_HIGH_INK=1 "
+                  "to override.",
+                  100.0 * (double)ink / (double)n);
+      gp->page_open = 0;
+      return -1;
+    }
+  }
 
   if (stp_verify(gp->vars) != 1)
   {
