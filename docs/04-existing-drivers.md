@@ -1,5 +1,7 @@
 # Existing Drivers — Canon i9950
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Summary Table
 
 | Driver | Platform | Status | Quality | Notes |
@@ -103,3 +105,13 @@ The i9950 is not prominently listed in the current OpenPrinting printer database
 5. PAPPL Printer Applications are Apple's endorsed replacement for kernel drivers
 
 Our project fills this gap with a maintained, macOS-native Printer Application.
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial survey of Canon, Gutenprint, and third-party drivers |

@@ -119,7 +119,14 @@ raster_get_row(stp_image_t *image, unsigned char *data, size_t byte_limit, int r
     return STP_IMAGE_STATUS_ABORT;
 
   src = gp->rows + ((size_t)row * gp->row_bytes);
-  memcpy(data, src, byte_limit < gp->row_bytes ? byte_limit : gp->row_bytes);
+  if (byte_limit > gp->row_bytes)
+  {
+    /* Pad unread bytes as white for current polarity. */
+    memset(data, gp->zero_is_white ? 0 : 255, byte_limit);
+    memcpy(data, src, gp->row_bytes);
+  }
+  else
+    memcpy(data, src, byte_limit);
   return STP_IMAGE_STATUS_OK;
 }
 
@@ -170,8 +177,6 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
   char                resbuf[32];
   int                 media_w, media_h, left, right, bottom, top;
 
-  (void)h;
-
   printer = stp_get_printer_by_driver(I9950_DRIVER_NAME);
   if (!printer)
     printer = stp_get_printer_by_driver("bjc-i9900");
@@ -182,14 +187,51 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
 
   stp_set_string_parameter(gp->vars, "JobMode", "Page");
 
-  /* i9950/i9900 Gutenprint modes are all 600 dpi; names are not "600x600". */
-  if (options->print_quality == IPP_QUALITY_DRAFT)
+  /*
+   * i9950/i9900 modes are all 600 dpi. Mono uses draftmono (CANON_INK_K) so
+   * white stays uninked — Color/CMYK modes lay light CMY dots (grey wash).
+   */
+  gp->mono = 0;
+  gp->zero_is_white = 0;
+  switch (options->header.cupsColorSpace)
+  {
+    case CUPS_CSPACE_W :
+    case CUPS_CSPACE_K :
+    case CUPS_CSPACE_SW:
+      gp->mono = 1;
+      break;
+    default :
+      break;
+  }
+
+  if (gp->mono)
+  {
+    if (options->print_quality == IPP_QUALITY_DRAFT)
+      snprintf(resbuf, sizeof(resbuf), "600x600dpi_draftmono2");
+    else
+      snprintf(resbuf, sizeof(resbuf), "600x600dpi_draftmono");
+    stp_set_string_parameter(gp->vars, "Resolution", resbuf);
+    stp_set_string_parameter(gp->vars, "PrintingMode", "BW");
+    stp_set_string_parameter(gp->vars, "InkSet", "Black");
+    stp_set_string_parameter(gp->vars, "InkType", "Gray");
+    stp_set_string_parameter(gp->vars, "ImageType", "LineArt");
+    stp_set_string_parameter(gp->vars, "ColorCorrection", "Threshold");
+  }
+  else if (options->print_quality == IPP_QUALITY_DRAFT)
+  {
     snprintf(resbuf, sizeof(resbuf), "600x600dpi_draft");
+    stp_set_string_parameter(gp->vars, "Resolution", resbuf);
+  }
   else if (options->print_quality == IPP_QUALITY_HIGH)
+  {
     snprintf(resbuf, sizeof(resbuf), "600x600dpi_high2");
+    stp_set_string_parameter(gp->vars, "Resolution", resbuf);
+  }
   else
+  {
     snprintf(resbuf, sizeof(resbuf), "600x600dpi");
-  stp_set_string_parameter(gp->vars, "Resolution", resbuf);
+    stp_set_string_parameter(gp->vars, "Resolution", resbuf);
+  }
 
   if (options->media.type[0])
   {
@@ -216,37 +258,89 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
   if (media_h > 0)
     stp_set_page_height(gp->vars, media_h);
 
+  /*
+   * Job 23 PASS geometry: fill the Gutenprint imageable area. Full-page
+   * 600 dpi A4 rasters map 1:1 into that box (same as known-good path).
+   * Also tighten with PAPPL media margins when they are larger than GP's.
+   */
   stp_get_imageable_area(gp->vars, &left, &right, &bottom, &top);
   if (right > left && bottom > top)
   {
-    stp_set_width(gp->vars, right - left);
-    stp_set_height(gp->vars, bottom - top);
-    stp_set_left(gp->vars, left);
-    stp_set_top(gp->vars, top);
+    int xdpi = h->HWResolution[0] ? (int)h->HWResolution[0] : 600;
+    int ydpi = h->HWResolution[1] ? (int)h->HWResolution[1] : 600;
+    int raster_w_pt = (int)((h->cupsWidth * 72.0) / xdpi + 0.5);
+    int raster_h_pt = (int)((h->cupsHeight * 72.0) / ydpi + 0.5);
+    int img_w = right - left;
+    int img_h = bottom - top;
+    /* PAPPL margins are hundredths of a millimeter. */
+    int pappl_l = (int)((options->media.left_margin * 72.0) / 2540.0 + 0.5);
+    int pappl_r = (int)((options->media.right_margin * 72.0) / 2540.0 + 0.5);
+    int pappl_t = (int)((options->media.top_margin * 72.0) / 2540.0 + 0.5);
+    int pappl_b = (int)((options->media.bottom_margin * 72.0) / 2540.0 + 0.5);
+    int cons_l = left;
+    int cons_r = right;
+    int cons_t = top;
+    int cons_b = bottom;
+    int print_w, print_h, print_l, print_t;
+
+    if (pappl_l > cons_l)
+      cons_l = pappl_l;
+    if (media_w - pappl_r < cons_r)
+      cons_r = media_w - pappl_r;
+    if (pappl_t > cons_t)
+      cons_t = pappl_t;
+    if (media_h - pappl_b < cons_b)
+      cons_b = media_h - pappl_b;
+
+    if (cons_r > cons_l && cons_b > cons_t)
+    {
+      left = cons_l;
+      right = cons_r;
+      top = cons_t;
+      bottom = cons_b;
+      img_w = right - left;
+      img_h = bottom - top;
+    }
+
+    /* Full-page jobs: fill imageable (Job 23). Smaller rasters: center. */
+    if (raster_w_pt >= img_w - 2 && raster_h_pt >= img_h - 2)
+    {
+      print_w = img_w;
+      print_h = img_h;
+      print_l = left;
+      print_t = top;
+    }
+    else
+    {
+      print_w = raster_w_pt < img_w ? raster_w_pt : img_w;
+      print_h = raster_h_pt < img_h ? raster_h_pt : img_h;
+      print_l = left + (img_w - print_w) / 2;
+      print_t = top + (img_h - print_h) / 2;
+    }
+
+    stp_set_width(gp->vars, print_w);
+    stp_set_height(gp->vars, print_h);
+    stp_set_left(gp->vars, print_l);
+    stp_set_top(gp->vars, print_t);
+
+    papplLogJob(gp->job, PAPPL_LOGLEVEL_DEBUG,
+                "Page geometry: raster=%dx%dpx @ %dx%d -> %dx%d pt; "
+                "imageable=%dx%d pt; print=%dx%d pt at (%d,%d); mono=%d res=%s.",
+                h->cupsWidth, h->cupsHeight, xdpi, ydpi,
+                raster_w_pt, raster_h_pt, img_w, img_h,
+                print_w, print_h, print_l, print_t,
+                gp->mono, resbuf);
   }
 
   /*
-   * InputImageType must match bytes/pixel AND polarity.
-   * PAPPL mono JPEG/PNG writes CUPS_CSPACE_K with 0=white (it inverts
-   * photographic gray with ~pixel). That is Gutenprint Whitescale, not
-   * Grayscale (0=black). Using Grayscale floods the page with black ink.
+   * Mono: K-only draftmono + BW + InkType Gray.
+   * Polarity locked in end_page (Job 38 PASS): 0=white + Grayscale.
    */
-  gp->mono = 0;
-  gp->zero_is_white = 0;
   switch (options->header.cupsColorSpace)
   {
-    case CUPS_CSPACE_W : /* DeviceGray, 0=white */
-    case CUPS_CSPACE_K : /* PAPPL Black, 0=white (amount of ink inverted) */
-      stp_set_string_parameter(gp->vars, "PrintingMode", "BW");
-      stp_set_string_parameter(gp->vars, "InputImageType", "Whitescale");
-      gp->mono = 1;
-      gp->zero_is_white = 1;
-      break;
-    case CUPS_CSPACE_SW: /* sGray, 0=black */
-      stp_set_string_parameter(gp->vars, "PrintingMode", "BW");
-      stp_set_string_parameter(gp->vars, "InputImageType", "Grayscale");
-      gp->mono = 1;
-      gp->zero_is_white = 0;
+    case CUPS_CSPACE_W :
+    case CUPS_CSPACE_K :
+    case CUPS_CSPACE_SW:
       break;
     case CUPS_CSPACE_CMYK :
       stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
@@ -379,33 +473,80 @@ i9950_gp_end_page(i9950_gp_job_t *gp)
   if (!gp || !gp->page_open)
     return -1;
 
-  /*
-   * Ink-safety gate: sparse mono fixtures are <<5% inked. A polarity bug
-   * turns that into ~95%+ black. Refuse to print unless overridden.
-   */
-  if (gp->mono && gp->rows && gp->width && gp->height &&
-      !getenv("I9950_ALLOW_HIGH_INK"))
+  if (gp->mono && gp->rows && gp->width && gp->height)
   {
-    size_t i, n = (size_t)gp->width * (size_t)gp->height;
+    size_t i, n;
     size_t ink = 0;
-    const unsigned char *p = gp->rows;
+    unsigned long long sum = 0;
+    unsigned char *p = gp->rows;
+    double mean;
+    const char *image_type;
+    size_t pure_white = 0, pure_black = 0;
+
+    /* Trust bytes-per-line for 8-bit mono (must match cupsWidth). */
+    if (gp->row_bytes != (size_t)gp->width)
+      papplLogJob(gp->job, PAPPL_LOGLEVEL_WARN,
+                  "Mono row_bytes=%lu != width=%u; using row_bytes for analysis.",
+                  (unsigned long)gp->row_bytes, gp->width);
+
+    n = (size_t)gp->height * gp->row_bytes;
+    for (i = 0; i < n; i++)
+      sum += p[i];
+    mean = (double)sum / (double)n;
+    /*
+     * LOCKED (Job 38 PASS — t-printable-a4-600.png):
+     * PAPPL mono is often 0=white. Canon K output is COLOR_BLACK
+     * ("Grayscale"). Setting Whitescale makes invert_output=1 and prints
+     * inverted (Job 37). Do NOT use Whitescale. Normalize to 0=white /
+     * 255=ink and always set InputImageType=Grayscale so invert_output=0
+     * (high value = ink).
+     */
+    {
+      int src_zero_is_white = (mean < 128.0);
+
+      if (!src_zero_is_white)
+      {
+        for (i = 0; i < n; i++)
+          p[i] = (unsigned char)(255 - p[i]);
+      }
+    }
+    gp->zero_is_white = 1;
+    image_type = "Grayscale";
+    stp_set_string_parameter(gp->vars, "InputImageType", image_type);
+
+    for (i = 0; i < n; i++)
+      p[i] = (p[i] > 128) ? 255 : 0; /* 0=white; ink -> 255 */
 
     for (i = 0; i < n; i++)
     {
-      if (gp->zero_is_white)
+      if (p[i] == 0)
+        pure_white++;
+      else
       {
-        if (p[i] > 64)
-          ink++;
-      }
-      else if (p[i] < 192)
+        pure_black++;
         ink++;
+      }
     }
 
     papplLogJob(gp->job, PAPPL_LOGLEVEL_INFO,
-                "Mono ink estimate: %.2f%% (%zu / %zu pixels).",
-                100.0 * (double)ink / (double)n, ink, n);
+                "Mono polarity: mean=%.1f normalized 0=white -> %s "
+                "(zero_is_white=1); after threshold ink=%.2f%% white=%lu "
+                "inked=%lu size=%ux%u row=%lu.",
+                mean, image_type,
+                100.0 * (double)ink / (double)n,
+                (unsigned long)pure_white, (unsigned long)pure_black,
+                gp->width, gp->height, (unsigned long)gp->row_bytes);
 
-    if (ink * 100 > n * 8) /* >8% inked */
+    if (ink == 0)
+    {
+      papplLogJob(gp->job, PAPPL_LOGLEVEL_ERROR,
+                  "Aborting page: mono ink is 0%% after threshold "
+                  "(blit/decode failure). Refusing empty page.");
+      gp->page_open = 0;
+      return -1;
+    }
+
+    if (!getenv("I9950_ALLOW_HIGH_INK") && ink * 100 > n * 8)
     {
       papplLogJob(gp->job, PAPPL_LOGLEVEL_ERROR,
                   "Aborting page: mono ink coverage %.1f%% exceeds 8%% safety "

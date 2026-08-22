@@ -1,5 +1,7 @@
 # Protocol Notes — Canon BJC / BJL
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Protocol Family
 
 The i9950 uses Canon's **BJC extended mode** (sometimes called BJL — Bubble Jet Language). It is **not** standard ESC/P2, PCL, or PostScript.
@@ -144,3 +146,13 @@ Status queries and maintenance (ink levels, nozzle check, head cleaning) may use
 | Ink definitions | `gutenprint/src/main/canon-inks.h` |
 | Media/modes | `gutenprint/src/main/canon-modes.h`, `canon-media.h` |
 | PPD mappings | `stp-bjc-i9950.*.ppd.gz` in gutenprint package |
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial BJL/ESC protocol and Gutenprint encoder reference notes |

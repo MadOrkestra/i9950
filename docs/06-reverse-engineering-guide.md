@@ -1,5 +1,7 @@
 # Reverse Engineering Guide — USB Capture
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Goal
 
 Produce ground-truth USB bulk traffic from a working driver to validate and debug our Canon BJC encoder.
@@ -142,3 +144,13 @@ Quick hex signatures:
 ## Status
 
 Captures directory scaffolded at `captures/README.md`. Populate when hardware and reference driver are available.
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial USB capture and reverse-engineering workflow |

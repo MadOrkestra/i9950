@@ -1,5 +1,7 @@
 # USB Identification — Canon i9950
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Vendor and Product IDs
 
 | Field | Value |
@@ -100,3 +102,13 @@ Modern macOS (Ventura+) has no inbox driver for this device. When plugged in:
 1. System may recognize it as a generic USB printer class device
 2. No functional driver is installed automatically
 3. Our Printer Application will claim the device via PAPPL USB support and expose it as an IPP Everywhere printer on localhost
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial USB VID/PID and driver-binding notes for macOS |

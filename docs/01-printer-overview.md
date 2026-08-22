@@ -1,5 +1,7 @@
 # Canon i9950 Printer Overview
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Product Summary
 
 The Canon Bubble Jet **i9950** is a wide-format photo inkjet printer released circa 2004, aimed at professional and enthusiast photographers. It supports A3+ (13×19 inch) borderless printing with an 8-ink ChromaPLUS system.
@@ -85,3 +87,13 @@ Supports Exif Print standard for optimized output when connected to compatible d
 ## Energy
 
 ENERGY STAR qualified.
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial hardware overview research (specs, ink, media, interfaces) |

@@ -1,5 +1,7 @@
 # Bibliography and Sources
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 All sources referenced in this research documentation. Access date: **2026-08-20** unless noted.
 
 ## Canon Official
@@ -84,3 +86,13 @@ All sources referenced in this research documentation. Access date: **2026-08-20
 | Title | URL |
 |-------|-----|
 | gutenprint changelog (i9950 added) | https://launchpad.net/ubuntu/quantal/+source/gutenprint/+changelog |
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [../11-documentation-standards.md](../11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial source bibliography with URLs |

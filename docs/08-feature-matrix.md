@@ -1,5 +1,7 @@
 # Feature Matrix — Canon i9950 Driver
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Legend
 
 | Symbol | Meaning |
@@ -92,3 +94,13 @@ sides-supported: one-sided
 5. Print 13×19 at 2400 dpi — full page, no truncation
 
 See [09-test-results.md](09-test-results.md) for test execution status.
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial feature matrix (Canon vs v1 target vs stretch) |

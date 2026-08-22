@@ -1,5 +1,7 @@
 # Community Issues and Workarounds
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Issue 1: Incomplete Last Page / Job Hang
 
 **Symptoms:**
@@ -122,3 +124,13 @@ Not driver bugs, but frequently discussed alongside driver problems:
 - Gutenprint forums: https://sourceforge.net/forum/?group_id=1537
 
 When our driver encounters Gutenprint backend bugs, consider upstream patches to Gutenprint canon definitions.
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial community issues and known-bug compilation |

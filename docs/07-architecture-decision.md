@@ -1,5 +1,7 @@
 # Architecture Decision Record
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Decision
 
 Build a **macOS CUPS Printer Application** using **PAPPL**, with print encoding delegated to **libgutenprint** (Canon BJC backend, model `i9950`).
@@ -115,3 +117,13 @@ Build tools: Xcode CLI, cmake or make, pkg-config, autoconf (for gutenprint if b
 - [PAPPL](https://github.com/michaelrsweet/pappl)
 - [OpenPrinting driver design guide](https://openprinting.github.io/documentation/02-designing-printer-drivers)
 - [Gutenprint Printer Application](https://github.com/OpenPrinting/gutenprint-printer-app)
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial ADR: PAPPL + libgutenprint Printer Application |

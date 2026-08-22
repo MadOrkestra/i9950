@@ -62,6 +62,15 @@ launchctl load ~/Library/LaunchAgents/com.i9950.printer-app.plist
 3. Run capture workflow: [docs/06-reverse-engineering-guide.md](docs/06-reverse-engineering-guide.md)
 4. Print test page and update [docs/09-test-results.md](docs/09-test-results.md)
 
+## Releases
+
+Versioning, changelog requirements, and GitHub Release contents: [docs/10-release-process.md](docs/10-release-process.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+
+```bash
+./scripts/release.sh X.Y.Z          # build .pkg, tag, push, publish notes + asset
+./scripts/release.sh X.Y.Z --dry-run
+```
+
 ## License
 
 GPL-2.0-or-later (required by libgutenprint linkage). See [docs/07-architecture-decision.md](docs/07-architecture-decision.md).

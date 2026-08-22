@@ -1,5 +1,7 @@
 # Canon i9950 Driver Research Documentation
 
+> **Doc version:** `1.1.0` · **Last updated:** 2026-08-22
+
 Research and reference material for developing a modern macOS USB printer driver for the Canon Bubble Jet i9950.
 
 ## Documents
@@ -15,6 +17,8 @@ Research and reference material for developing a modern macOS USB printer driver
 | [07-architecture-decision.md](07-architecture-decision.md) | PAPPL + libgutenprint architecture rationale |
 | [08-feature-matrix.md](08-feature-matrix.md) | Canon original vs v1 target vs stretch goals |
 | [09-test-results.md](09-test-results.md) | Test matrix results (updated during development) |
+| [10-release-process.md](10-release-process.md) | Product SemVer, changelog, and GitHub Release packaging |
+| [11-documentation-standards.md](11-documentation-standards.md) | Doc SemVer rules, header + version-history template |
 | [sources/bibliography.md](sources/bibliography.md) | Full source list with URLs and access dates |
 
 ## Related Project Directories
@@ -36,6 +40,8 @@ i9950/
 3. Use **06** when capturing USB traffic with a connected printer.
 4. Use **03** to interpret capture data and validate encoder output.
 5. Refer to **07** and **08** during implementation planning.
+6. Follow **11** for SemVer and version history on every doc (new or updated).
+7. Use **10** when cutting a software release (`CHANGELOG.md` + GitHub).
 
 ## Key Facts (Quick Reference)
 
@@ -44,3 +50,14 @@ i9950/
 - **Protocol:** Canon BJC extended mode (BJL + ESC binary commands)
 - **Target:** macOS CUPS Printer Application (PAPPL-based)
 - **Foundation:** Gutenprint `bjc-i9950` backend (EXPERIMENTAL status)
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.1.0 | 2026-08-22 | Index `11-documentation-standards.md`; how-to steps for doc SemVer |
+| 1.0.0 | 2026-08-22 | Index of research docs; linked documentation standards and SemVer convention |

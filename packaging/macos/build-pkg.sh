@@ -5,10 +5,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PKGROOT="$ROOT/build/pkgroot"
 PKG="$ROOT/build/i9950-printer-app.pkg"
-VERSION="$(grep '^VERSION' "$ROOT/Makefile" | awk '{print $3}')"
+VERSION="${VERSION:-$(grep '^VERSION' "$ROOT/Makefile" | awk '{print $3}')}"
+VERSION="${VERSION:-0.1.0}"
 
 cd "$ROOT"
-make clean all
+make clean all VERSION="$VERSION"
 
 rm -rf "$PKGROOT"
 mkdir -p "$PKGROOT/usr/local/bin"

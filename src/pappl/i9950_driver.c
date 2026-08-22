@@ -104,15 +104,15 @@ i9950_driver_callback(pappl_system_t         *system,
                                  PAPPL_COLOR_MODE_MONOCHROME;
   driver_data->color_default   = PAPPL_COLOR_MODE_COLOR;
 
-  driver_data->num_resolution = 4;
+  /*
+   * Gutenprint bjc-i9950 modes are all native 600 dpi. Advertising 1200/2400
+   * makes CUPS PDF filters send huge rasters that we still encode as 600 dpi
+   * modes — that mismatch greys sparse mono pages. Re-enable higher DPI only
+   * when the encoder maps them to real GP modes / downsamples correctly.
+   */
+  driver_data->num_resolution = 1;
   driver_data->x_resolution[0] = 600;
   driver_data->y_resolution[0] = 600;
-  driver_data->x_resolution[1] = 1200;
-  driver_data->y_resolution[1] = 1200;
-  driver_data->x_resolution[2] = 2400;
-  driver_data->y_resolution[2] = 2400;
-  driver_data->x_resolution[3] = 4800;
-  driver_data->y_resolution[3] = 2400;
   driver_data->x_default = 600;
   driver_data->y_default = 600;
 
@@ -131,8 +131,8 @@ i9950_driver_callback(pappl_system_t         *system,
   driver_data->num_source = 1;
   driver_data->source[0]  = "auto";
 
-  driver_data->left_right = 36;
-  driver_data->bottom_top = 36;
+  driver_data->left_right = 500; /* 5mm */
+  driver_data->bottom_top = 500; /* 5mm */
   driver_data->ppm        = 12;
   driver_data->ppm_color  = 12;
 

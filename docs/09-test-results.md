@@ -1,5 +1,7 @@
 # Test Results — Canon i9950 macOS Driver
 
+> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+
 ## Test Environment
 
 | Field | Value |
@@ -91,3 +93,13 @@ Wasteful color fixtures (if present) live under `build/archive-wasteful/` — do
 2. Update Result column: PASS / FAIL / SKIP
 3. Add notes and screenshots to `test/expected/` if visual
 4. Log regressions in table above
+
+---
+
+## Version history
+
+Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-documentation-standards.md).
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 1.0.0 | 2026-08-22 | Initial test matrix and early automated/no-hardware results |
