@@ -9,7 +9,9 @@
 
 #include <pappl/pappl.h>
 
-#define I9950_VERSION "0.1.0"
+#ifndef I9950_VERSION
+#define I9950_VERSION "0.0.0-dev"
+#endif
 
 static bool
 i9950_callback(pappl_system_t         *system,
