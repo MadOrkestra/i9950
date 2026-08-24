@@ -1,6 +1,6 @@
 # Feature Matrix — Canon i9950 Driver
 
-> **Doc version:** `1.2.0` · **Last updated:** 2026-08-24
+> **Doc version:** `1.2.1` · **Last updated:** 2026-08-24
 
 ## Current MVP (hardware-proven)
 
@@ -65,8 +65,8 @@ Full 8-ink multilevel color (`600x600dpi` C6 inkset) is **not** MVP — it break
 ### P1 — Full Parity (v1.0)
 
 - [ ] Resolutions: 600 only today; 1200, 2400, 4800 dpi deferred ([i9950_driver.c](../src/pappl/i9950_driver.c) advertises 600 until encoder maps GP modes)
-- [ ] Paper sizes through 13×19 / A3+ (listed in driver; only A4 gated on hardware)
-- [ ] Borderless printing (flag set; not validated)
+- [ ] Paper sizes through 13×19 / A3+ (listed in driver; T07a fixture + run script ready)
+- [ ] Borderless printing (T04a/T04 fixtures ready; hardware gate open)
 - [ ] Media type selection on hardware (plain PASS; photo glossy/matte not gated)
 - [x] Multi-page documents with **printable gate** artwork (T08 PASS — Jobs 55/56; T13 PASS — Job 58 PDF via CUPS)
 - [ ] Full multilevel 8-ink color without geometry stretch
@@ -124,6 +124,7 @@ Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-do
 
 | Version | Date | Notes |
 |---------|------|-------|
+| 1.2.1 | 2026-08-24 | T04/T07 gate fixtures and run script; hardware READY |
 | 1.2.0 | 2026-08-24 | CUPS PDF→PWG multi-page path PASS (T13 Job 58) |
 | 1.1.0 | 2026-08-24 | MVP reality: draft mono/color at 600 dpi; P1 resolutions/multilevel color open |
 | 1.0.0 | 2026-08-22 | Initial feature matrix (Canon vs v1 target vs stretch) |

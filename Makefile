@@ -54,9 +54,11 @@ TOOL_OBJS   := $(patsubst %.c,$(BUILD_DIR)/%.o,$(TOOL_SRCS))
 TEST_OBJS   := $(patsubst %.c,$(BUILD_DIR)/%.o,$(TEST_SRCS))
 
 .PHONY: all clean deps pappl gutenprint test install \
-        normalize-capture run-tests package menu-icon
+        normalize-capture run-tests package menu-icon fixtures fixtures-photo
 
 MENU_ICON   := $(BUILD_DIR)/share/i9950/lucide-printer-template.png
+FIXTURE_VENV := $(BUILD_DIR)/.venv-fixtures
+FIXTURE_PY   := $(FIXTURE_VENV)/bin/python
 
 all: deps menu-icon $(BUILD_DIR)/i9950-printer-app $(BUILD_DIR)/i9950-tool
 
@@ -123,6 +125,18 @@ run-tests: all test
 
 package: all
 	./packaging/macos/build-pkg.sh
+
+$(FIXTURE_VENV)/bin/python:
+	python3 -m venv $(FIXTURE_VENV)
+	$(FIXTURE_PY) -m pip install -q --upgrade pip pillow
+
+fixtures: $(FIXTURE_VENV)/bin/python
+	$(FIXTURE_PY) scripts/generate_printable_gate.py
+	$(FIXTURE_PY) scripts/generate_color_swatches_gate.py
+
+fixtures-photo: $(FIXTURE_VENV)/bin/python
+	$(FIXTURE_PY) scripts/generate_photo_4x6_gate.py
+	$(FIXTURE_PY) scripts/generate_a3plus_gate.py
 
 clean:
 	rm -rf $(BUILD_DIR)

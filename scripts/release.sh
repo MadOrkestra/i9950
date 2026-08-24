@@ -6,7 +6,6 @@
 #
 # Options:
 #   --dry-run      Validate and print notes; do not tag, push, or publish
-#   --skip-build   Do not build locally; publish notes + tag and let CI attach the .pkg
 #   --yes          Skip the interactive confirmation prompt
 #   --no-push      Create the local tag (and optional local release draft) without pushing
 #
@@ -22,7 +21,6 @@ cd "$ROOT"
 
 VERSION=""
 DRY_RUN=0
-SKIP_BUILD=0
 ASSUME_YES=0
 NO_PUSH=0
 
@@ -35,7 +33,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage 0 ;;
     --dry-run) DRY_RUN=1; shift ;;
-    --skip-build) SKIP_BUILD=1; shift ;;
     --yes|-y) ASSUME_YES=1; shift ;;
     --no-push) NO_PUSH=1; shift ;;
     -*)
@@ -138,15 +135,11 @@ if ! git diff --quiet -- Makefile || ! git diff --cached --quiet -- Makefile; th
 fi
 
 # --- Build -------------------------------------------------------------------
-if [[ "$SKIP_BUILD" -eq 0 ]]; then
-  [[ "$(uname)" == Darwin ]] || die "building the .pkg requires macOS (use --skip-build to publish notes/tag only)"
-  echo "Building package..."
-  make package VERSION="$VERSION"
-  cp "$ROOT/build/i9950-printer-app.pkg" "$ASSET_PATH"
-  echo "Built ${ASSET_PATH}"
-else
-  echo "Skipping local build; CI will attach the .pkg after the tag is pushed"
-fi
+[[ "$(uname)" == Darwin ]] || die "building the .pkg requires macOS"
+echo "Building package..."
+make package VERSION="$VERSION"
+cp "$ROOT/build/i9950-printer-app.pkg" "$ASSET_PATH"
+echo "Built ${ASSET_PATH}"
 
 # --- Tag ---------------------------------------------------------------------
 if git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -181,16 +174,12 @@ if [[ "$NO_PUSH" -eq 1 ]]; then
   publish_args+=(--draft --target "$(git rev-parse HEAD)")
 fi
 
-if [[ "$SKIP_BUILD" -eq 0 ]]; then
-  publish_args+=("$ASSET_PATH")
-fi
+publish_args+=("$ASSET_PATH")
 
 if gh release view "$TAG" >/dev/null 2>&1; then
   echo "Release ${TAG} already exists; updating notes and assets..."
   gh release edit "$TAG" --title "i9950 Printer Application ${VERSION}" --notes-file "$NOTES_FILE"
-  if [[ "$SKIP_BUILD" -eq 0 ]]; then
-    gh release upload "$TAG" "$ASSET_PATH" --clobber
-  fi
+  gh release upload "$TAG" "$ASSET_PATH" --clobber
 else
   echo "Creating GitHub Release ${TAG}..."
   gh release create "${publish_args[@]}"
@@ -200,8 +189,5 @@ url="$(gh release view "$TAG" --json url -q .url 2>/dev/null || true)"
 echo
 echo "=== release published ==="
 echo "Tag:     ${TAG}"
-[[ "$SKIP_BUILD" -eq 0 ]] && echo "Package: ${ASSET_NAME}"
+echo "Package: ${ASSET_NAME}"
 [[ -n "$url" ]] && echo "URL:     ${url}"
-if [[ "$SKIP_BUILD" -eq 1 && "$NO_PUSH" -eq 0 ]]; then
-  echo "Watch CI package build: gh run watch"
-fi

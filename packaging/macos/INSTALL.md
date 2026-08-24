@@ -11,7 +11,7 @@ Loads LaunchAgent `com.i9950.printer-app` to run `i9950-printer-app server` at l
 
 ## GitHub releases
 
-Tagged releases (`vX.Y.Z`) publish `i9950-printer-app-X.Y.Z-macos.pkg` via GitHub Actions. Release pages include SemVer metadata, changelog changes/improvements, and install steps. Author those details in [CHANGELOG.md](../../CHANGELOG.md); process is documented in [docs/10-release-process.md](../../docs/10-release-process.md).
+Tagged releases (`vX.Y.Z`) publish `i9950-printer-app-X.Y.Z-macos.pkg` via [scripts/release.sh](../../scripts/release.sh) on macOS. Release pages include SemVer metadata, changelog changes/improvements, and install steps. Author those details in [CHANGELOG.md](../../CHANGELOG.md); process is documented in [docs/10-release-process.md](../../docs/10-release-process.md).
 
 ## Distribution
 

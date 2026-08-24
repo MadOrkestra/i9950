@@ -8,6 +8,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- T04/T07 hardware gate fixtures (`make fixtures-photo`) and `scripts/run-hardware-gates.sh`
+
 ## [0.2.1] - 2026-08-24
 
 ### Added
