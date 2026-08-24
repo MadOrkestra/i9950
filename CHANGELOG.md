@@ -26,6 +26,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Mono polarity: do not use Whitescale with Canon K (Job 37 invert); normalize 0=white → Grayscale
 - Color geometry stretch / right-edge clip from multilevel medium mode; use draft 1-bit color mode
 
+### Verified (Phase 1–2)
+
+- Multi-page mono printable gate: Jobs 55/56 (PAGE 1/2 + PAGE 2/2), last-page flush OK
+- CUPS → IPP single page: Job 57 via `lp -d i9950dev`
+- CUPS PDF → IPP 2-page: Job 58 via `lp -d i9950dev` + `t-printable-a4-600.pdf`
+
 ## [0.1.0] - 2026-08-22
 
 ### Added

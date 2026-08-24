@@ -1,6 +1,6 @@
 # Architecture Decision Record
 
-> **Doc version:** `1.1.0` · **Last updated:** 2026-08-24
+> **Doc version:** `1.2.0` · **Last updated:** 2026-08-24
 
 ## Decision
 
@@ -116,6 +116,19 @@ Grey wash on white paper = mono leaked onto Color/CMYK. Full-page black = wrong 
 
 Both paths share the same page geometry (5 mm margins, uniform scale). Aspect bugs that appear only in color are almost always the wrong Resolution/inkset, not the geometry block.
 
+### PDF / multi-page (Job 58 PASS)
+
+| Item | Value |
+|------|-------|
+| Supported input to PAPPL | `image/pwg-raster` only (driver `format` in [i9950_driver.c](../src/pappl/i9950_driver.c)) |
+| macOS PDF workflow | App or `lp` → **CUPS** (`application/pdf` → PWG raster @ 600 dpi) → IPP printer app → encoder |
+| Submit | `lp -d i9950dev -o print-color-mode=monochrome -o printer-resolution=600dpi -o print-scaling=none build/t-printable-a4-600.pdf` |
+| Fixture | `build/t-printable-a4-600.pdf` (2 pages, PAGE N OF 2) |
+| CLI workaround | Per-page PNG: `t-printable-a4-600-p1.png` + `p2.png` via `i9950-printer-app submit` (T08) |
+| Rejected | Direct `./build/i9950-printer-app submit … .pdf` — PAPPL has no `application/pdf` handler |
+
+Do not advertise `application/pdf` on the IPP service until a MIME filter is implemented. CUPS is the intended PDF path on macOS.
+
 ## Why Not Fork Gutenprint Entirely?
 
 We fork minimally — only if `canon-printers.h` i9950 definitions need patches. Prefer:
@@ -156,5 +169,6 @@ Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-do
 
 | Version | Date | Notes |
 |---------|------|-------|
+| 1.2.0 | 2026-08-24 | Locked CUPS PDF path (Job 58); PAPPL raster-only input |
 | 1.1.0 | 2026-08-24 | Locked mono (Job 38) and color draft (Job 52) print paths |
 | 1.0.0 | 2026-08-22 | Initial ADR: PAPPL + libgutenprint Printer Application |

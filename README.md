@@ -9,7 +9,7 @@ Modern macOS printer driver for the Canon Bubble Jet **i9950** (USB `04A9:1090`)
 | Research docs | Complete — see [docs/](docs/) |
 | Driver source | Builds; locked mono + color draft paths |
 | USB capture baselines | Partial — live USB print jobs exercised |
-| Physical print validation | Mono gate PASS (Job 38); color gate PASS (Job 52) |
+| Physical print validation | Mono + color gates PASS; multi-page mono + CUPS PDF PASS (Jobs 55–58) |
 
 The driver is designed to work without a kernel extension. When you connect the printer, macOS should discover it via Bonjour after starting the Printer Application.
 
@@ -40,6 +40,18 @@ Uses Gutenprint `600x600dpi_draftmono` + `PrintingMode=BW` + `InputImageType=Gra
 ```
 
 Uses Gutenprint `600x600dpi_draft` (1-bit CMYK). Do **not** use medium `600x600dpi` (4-bit) — it stretches X and clips the right margin.
+
+**Multi-page PDF** (via CUPS — Preview, Pages, print dialog):
+
+```bash
+lp -d i9950dev \
+  -o media=iso_a4_210x297mm -o media-type=stationery \
+  -o print-color-mode=monochrome -o printer-resolution=600dpi \
+  -o print-scaling=none \
+  build/t-printable-a4-600.pdf
+```
+
+CUPS converts PDF → PWG raster @ 600 dpi, then sends to the printer app. Direct `i9950-printer-app submit … .pdf` is not supported.
 
 ## Requirements
 
