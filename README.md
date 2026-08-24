@@ -7,11 +7,39 @@ Modern macOS printer driver for the Canon Bubble Jet **i9950** (USB `04A9:1090`)
 | Component | Status |
 |-----------|--------|
 | Research docs | Complete — see [docs/](docs/) |
-| Driver source | Complete — builds without printer |
-| USB capture baselines | **Blocked** — no printer connected yet |
-| Physical print validation | **Blocked** — connect i9950 via USB |
+| Driver source | Builds; locked mono + color draft paths |
+| USB capture baselines | Partial — live USB print jobs exercised |
+| Physical print validation | Mono gate PASS (Job 38); color gate PASS (Job 52) |
 
 The driver is designed to work without a kernel extension. When you connect the printer, macOS should discover it via Bonjour after starting the Printer Application.
+
+## Locked print paths
+
+Do not change encoder Resolution/polarity without a new physical gate. Details:
+[docs/07-architecture-decision.md](docs/07-architecture-decision.md#locked-print-paths-physical-gate).
+
+**Black / greyscale only** (`print-color-mode=monochrome`):
+
+```bash
+./build/i9950-printer-app server -o log-file=build/i9950-server.log -o log-level=debug
+./build/i9950-printer-app submit -d "Canon i9950 (USB)" \
+  -o media=iso_a4_210x297mm -o media-type=stationery \
+  -o print-color-mode=monochrome -o printer-resolution=600dpi \
+  build/t-printable-a4-600.png
+```
+
+Uses Gutenprint `600x600dpi_draftmono` + `PrintingMode=BW` + `InputImageType=Grayscale` (0=white). K ink only.
+
+**Color** (`print-color-mode=color`):
+
+```bash
+./build/i9950-printer-app submit -d "Canon i9950 (USB)" \
+  -o media=iso_a4_210x297mm -o media-type=stationery \
+  -o print-color-mode=color -o printer-resolution=600dpi \
+  build/t-color-swatches-a4-600.jpg
+```
+
+Uses Gutenprint `600x600dpi_draft` (1-bit CMYK). Do **not** use medium `600x600dpi` (4-bit) — it stretches X and clips the right margin.
 
 ## Requirements
 

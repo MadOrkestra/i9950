@@ -17,6 +17,8 @@
 #include <string.h>
 
 #define I9950_DRIVER_NAME "bjc-i9950"
+/* Match driver left_right/bottom_top and fixture MARGIN_MM (5 mm). */
+#define I9950_MARGIN_HMM 500
 
 #ifndef I9950_GUTENPRINT_XMLDIR
 #define I9950_GUTENPRINT_XMLDIR ""
@@ -188,8 +190,8 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
   stp_set_string_parameter(gp->vars, "JobMode", "Page");
 
   /*
-   * i9950/i9900 modes are all 600 dpi. Mono uses draftmono (CANON_INK_K) so
-   * white stays uninked — Color/CMYK modes lay light CMY dots (grey wash).
+   * i9950/i9900 Gutenprint modes are all native 600 dpi. Resolution names
+   * below are locked by physical prints — see mono and color LOCKED blocks.
    */
   gp->mono = 0;
   gp->zero_is_white = 0;
@@ -206,6 +208,20 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
 
   if (gp->mono)
   {
+    /*
+     * LOCKED (Job 38 PASS — t-printable-a4-600.png; Job 39 JPG):
+     * Black / greyscale-only path. Submit with print-color-mode=monochrome.
+     *
+     * Resolution: 600x600dpi_draftmono (or _draftmono2 for draft quality).
+     *   INKSET 11_K2 = 1-bit K, MODE_FLAG_IP8500 — K cartridge only.
+     * PrintingMode=BW, InkSet=Black, InkType=Gray — prevents Color/CMY
+     *   wash on white paper.
+     * ImageType=LineArt + ColorCorrection=Threshold — sparse text/line art.
+     * Polarity (end_page): normalize to 0=white / 255=ink, then always
+     *   InputImageType=Grayscale. Never Whitescale (Job 37 inverted).
+     *
+     * Do NOT send mono through Color / 600x600dpi CMYK modes.
+     */
     if (options->print_quality == IPP_QUALITY_DRAFT)
       snprintf(resbuf, sizeof(resbuf), "600x600dpi_draftmono2");
     else
@@ -217,19 +233,25 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
     stp_set_string_parameter(gp->vars, "ImageType", "LineArt");
     stp_set_string_parameter(gp->vars, "ColorCorrection", "Threshold");
   }
-  else if (options->print_quality == IPP_QUALITY_DRAFT)
-  {
-    snprintf(resbuf, sizeof(resbuf), "600x600dpi_draft");
-    stp_set_string_parameter(gp->vars, "Resolution", resbuf);
-  }
-  else if (options->print_quality == IPP_QUALITY_HIGH)
-  {
-    snprintf(resbuf, sizeof(resbuf), "600x600dpi_high2");
-    stp_set_string_parameter(gp->vars, "Resolution", resbuf);
-  }
   else
   {
-    snprintf(resbuf, sizeof(resbuf), "600x600dpi");
+    /*
+     * LOCKED (Job 52 PASS — t-color-swatches-a4-600.jpg):
+     * Color must use 1-bit IP8500 draft modes, not medium/high multilevel.
+     *
+     * Failed: "600x600dpi" (INKSET 11_C6M6Y6K6_c = 4-bit) → squares stretch
+     * sideways, right frame clips (Jobs 43–51). Adding MODE_FLAG_IP8500 alone
+     * did not help — bit packing still mismatched mono draftmono (1-bit K).
+     *
+     * Works: "600x600dpi_draft" / "_draft2" (INKSET 11_C2M2Y2K2 = 1-bit CMYK,
+     * MODE_FLAG_IP8500) — same ESC (t) / bit-depth family as draftmono.
+     * Do NOT switch color back to 600x600dpi / high2 / PRO without a new
+     * physical geometry gate.
+     */
+    if (options->print_quality == IPP_QUALITY_DRAFT)
+      snprintf(resbuf, sizeof(resbuf), "600x600dpi_draft2");
+    else
+      snprintf(resbuf, sizeof(resbuf), "600x600dpi_draft");
     stp_set_string_parameter(gp->vars, "Resolution", resbuf);
   }
 
@@ -259,9 +281,36 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
     stp_set_page_height(gp->vars, media_h);
 
   /*
-   * Job 23 PASS geometry: fill the Gutenprint imageable area. Full-page
-   * 600 dpi A4 rasters map 1:1 into that box (same as known-good path).
-   * Also tighten with PAPPL media margins when they are larger than GP's.
+   * Color: set final PrintingMode/InputImageType before geometry so
+   * stp_get_imageable_area() sees the same state as stp_print().
+   */
+  if (!gp->mono)
+  {
+    switch (options->header.cupsColorSpace)
+    {
+      case CUPS_CSPACE_CMYK :
+        stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
+        stp_set_string_parameter(gp->vars, "InputImageType", "CMYK");
+        break;
+      case CUPS_CSPACE_KCMY :
+        stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
+        stp_set_string_parameter(gp->vars, "InputImageType", "KCMY");
+        break;
+      default :
+        stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
+        stp_set_string_parameter(gp->vars, "InputImageType", "RGB");
+        break;
+    }
+  }
+
+  /*
+   * One geometry for mono/color and PNG/JPG/PDF rasters.
+   *
+   * Fixtures are drawn for the driver 5 mm printable inset. PAPPL often
+   * hands us 0 margins, so Gutenprint's ~3.5 mm imageable box was used
+   * instead — that clips the right frame and, when filled independently
+   * in X/Y, turns squares into rectangles. Always enforce ≥5 mm and fit
+   * the raster with a single scale factor.
    */
   stp_get_imageable_area(gp->vars, &left, &right, &bottom, &top);
   if (right > left && bottom > top)
@@ -270,18 +319,26 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
     int ydpi = h->HWResolution[1] ? (int)h->HWResolution[1] : 600;
     int raster_w_pt = (int)((h->cupsWidth * 72.0) / xdpi + 0.5);
     int raster_h_pt = (int)((h->cupsHeight * 72.0) / ydpi + 0.5);
-    int img_w = right - left;
-    int img_h = bottom - top;
-    /* PAPPL margins are hundredths of a millimeter. */
-    int pappl_l = (int)((options->media.left_margin * 72.0) / 2540.0 + 0.5);
-    int pappl_r = (int)((options->media.right_margin * 72.0) / 2540.0 + 0.5);
-    int pappl_t = (int)((options->media.top_margin * 72.0) / 2540.0 + 0.5);
-    int pappl_b = (int)((options->media.bottom_margin * 72.0) / 2540.0 + 0.5);
+    int img_w, img_h;
+    int ml_hmm = options->media.left_margin > 0 ? (int)options->media.left_margin
+                                                 : I9950_MARGIN_HMM;
+    int mr_hmm = options->media.right_margin > 0 ? (int)options->media.right_margin
+                                                  : I9950_MARGIN_HMM;
+    int mt_hmm = options->media.top_margin > 0 ? (int)options->media.top_margin
+                                                : I9950_MARGIN_HMM;
+    int mb_hmm = options->media.bottom_margin > 0 ? (int)options->media.bottom_margin
+                                                   : I9950_MARGIN_HMM;
+    /* hundredths of a millimetre → points */
+    int pappl_l = (int)((ml_hmm * 72.0) / 2540.0 + 0.5);
+    int pappl_r = (int)((mr_hmm * 72.0) / 2540.0 + 0.5);
+    int pappl_t = (int)((mt_hmm * 72.0) / 2540.0 + 0.5);
+    int pappl_b = (int)((mb_hmm * 72.0) / 2540.0 + 0.5);
     int cons_l = left;
     int cons_r = right;
     int cons_t = top;
     int cons_b = bottom;
     int print_w, print_h, print_l, print_t;
+    double sx, sy, s;
 
     if (pappl_l > cons_l)
       cons_l = pappl_l;
@@ -298,25 +355,28 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
       right = cons_r;
       top = cons_t;
       bottom = cons_b;
-      img_w = right - left;
-      img_h = bottom - top;
     }
+    img_w = right - left;
+    img_h = bottom - top;
 
-    /* Full-page jobs: fill imageable (Job 23). Smaller rasters: center. */
-    if (raster_w_pt >= img_w - 2 && raster_h_pt >= img_h - 2)
-    {
+    sx = (double)img_w / (double)raster_w_pt;
+    sy = (double)img_h / (double)raster_h_pt;
+    s = (sx < sy) ? sx : sy;
+    if (s > 1.0)
+      s = 1.0;
+
+    print_w = (int)(raster_w_pt * s + 0.5);
+    print_h = (int)(raster_h_pt * s + 0.5);
+    if (print_w < 1)
+      print_w = 1;
+    if (print_h < 1)
+      print_h = 1;
+    if (print_w > img_w)
       print_w = img_w;
+    if (print_h > img_h)
       print_h = img_h;
-      print_l = left;
-      print_t = top;
-    }
-    else
-    {
-      print_w = raster_w_pt < img_w ? raster_w_pt : img_w;
-      print_h = raster_h_pt < img_h ? raster_h_pt : img_h;
-      print_l = left + (img_w - print_w) / 2;
-      print_t = top + (img_h - print_h) / 2;
-    }
+    print_l = left + (img_w - print_w) / 2;
+    print_t = top + (img_h - print_h) / 2;
 
     stp_set_width(gp->vars, print_w);
     stp_set_height(gp->vars, print_h);
@@ -325,35 +385,13 @@ apply_pappl_options(i9950_gp_job_t *gp, pappl_pr_options_t *options)
 
     papplLogJob(gp->job, PAPPL_LOGLEVEL_DEBUG,
                 "Page geometry: raster=%dx%dpx @ %dx%d -> %dx%d pt; "
-                "imageable=%dx%d pt; print=%dx%d pt at (%d,%d); mono=%d res=%s.",
+                "printable=%dx%d pt (margins hmm L%d R%d T%d B%d); "
+                "print=%dx%d pt at (%d,%d) scale=%.4f; mono=%d res=%s.",
                 h->cupsWidth, h->cupsHeight, xdpi, ydpi,
                 raster_w_pt, raster_h_pt, img_w, img_h,
-                print_w, print_h, print_l, print_t,
+                ml_hmm, mr_hmm, mt_hmm, mb_hmm,
+                print_w, print_h, print_l, print_t, s,
                 gp->mono, resbuf);
-  }
-
-  /*
-   * Mono: K-only draftmono + BW + InkType Gray.
-   * Polarity locked in end_page (Job 38 PASS): 0=white + Grayscale.
-   */
-  switch (options->header.cupsColorSpace)
-  {
-    case CUPS_CSPACE_W :
-    case CUPS_CSPACE_K :
-    case CUPS_CSPACE_SW:
-      break;
-    case CUPS_CSPACE_CMYK :
-      stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
-      stp_set_string_parameter(gp->vars, "InputImageType", "CMYK");
-      break;
-    case CUPS_CSPACE_KCMY :
-      stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
-      stp_set_string_parameter(gp->vars, "InputImageType", "KCMY");
-      break;
-    default :
-      stp_set_string_parameter(gp->vars, "PrintingMode", "Color");
-      stp_set_string_parameter(gp->vars, "InputImageType", "RGB");
-      break;
   }
 
   /* PAPPL often reports 0 margins; borderless is only valid on photo media. */

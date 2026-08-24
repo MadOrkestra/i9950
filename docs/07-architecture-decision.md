@@ -1,6 +1,6 @@
 # Architecture Decision Record
 
-> **Doc version:** `1.0.0` · **Last updated:** 2026-08-22
+> **Doc version:** `1.1.0` · **Last updated:** 2026-08-24
 
 ## Decision
 
@@ -86,6 +86,36 @@ Use PAPPL's built-in USB device handling:
 
 This directly addresses the #1 community bug (incomplete last page).
 
+## Locked print paths (physical gate)
+
+Do not change these without a new PASS on the named fixtures. Encoder:
+[`src/canon/gp_encoder.c`](../src/canon/gp_encoder.c).
+
+### Black / greyscale only (Job 38 PASS)
+
+| Item | Value |
+|------|-------|
+| Submit | `-o print-color-mode=monochrome` |
+| Fixture | `build/t-printable-a4-600.png` (also `.jpg`) |
+| Gutenprint `Resolution` | `600x600dpi_draftmono` (normal) / `_draftmono2` (draft) |
+| Ink | `11_K2` (1-bit K), `MODE_FLAG_IP8500` |
+| Mode params | `PrintingMode=BW`, `InkSet=Black`, `InkType=Gray`, `ImageType=LineArt`, `ColorCorrection=Threshold` |
+| Polarity | Normalize raster to **0=white / 255=ink**; always `InputImageType=Grayscale` before `stp_print`. **Never** `Whitescale` (Job 37 inverted). |
+
+Grey wash on white paper = mono leaked onto Color/CMYK. Full-page black = wrong polarity.
+
+### Color (Job 52 PASS)
+
+| Item | Value |
+|------|-------|
+| Submit | `-o print-color-mode=color` |
+| Fixture | `build/t-color-swatches-a4-600.jpg` (also `.png`) |
+| Gutenprint `Resolution` | `600x600dpi_draft` (normal/high) / `_draft2` (draft) |
+| Ink | `11_C2M2Y2K2` (1-bit CMYK), `MODE_FLAG_IP8500` |
+| Rejected | `600x600dpi` / `high2` (`11_C6…` 4-bit multilevel) — X stretch + right frame clip (Jobs 43–51) |
+
+Both paths share the same page geometry (5 mm margins, uniform scale). Aspect bugs that appear only in color are almost always the wrong Resolution/inkset, not the geometry block.
+
 ## Why Not Fork Gutenprint Entirely?
 
 We fork minimally — only if `canon-printers.h` i9950 definitions need patches. Prefer:
@@ -126,4 +156,5 @@ Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-do
 
 | Version | Date | Notes |
 |---------|------|-------|
+| 1.1.0 | 2026-08-24 | Locked mono (Job 38) and color draft (Job 52) print paths |
 | 1.0.0 | 2026-08-22 | Initial ADR: PAPPL + libgutenprint Printer Application |

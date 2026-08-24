@@ -149,6 +149,10 @@ i9950_driver_callback(pappl_system_t         *system,
   papplCopyString(driver_data->media_default.source,
                   "auto",
                   sizeof(driver_data->media_default.source));
+  driver_data->media_default.left_margin   = driver_data->left_right;
+  driver_data->media_default.right_margin  = driver_data->left_right;
+  driver_data->media_default.top_margin    = driver_data->bottom_top;
+  driver_data->media_default.bottom_margin = driver_data->bottom_top;
 
   for (i = 0; i < driver_data->num_media; i ++)
   {

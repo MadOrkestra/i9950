@@ -1,6 +1,6 @@
 # Canon i9950 Driver Research Documentation
 
-> **Doc version:** `1.1.0` · **Last updated:** 2026-08-22
+> **Doc version:** `1.1.1` · **Last updated:** 2026-08-24
 
 Research and reference material for developing a modern macOS USB printer driver for the Canon Bubble Jet i9950.
 
@@ -14,7 +14,7 @@ Research and reference material for developing a modern macOS USB printer driver
 | [04-existing-drivers.md](04-existing-drivers.md) | Canon, Gutenprint, TurboPrint, Windows inbox drivers |
 | [05-community-issues.md](05-community-issues.md) | Known bugs, workarounds, forum reports |
 | [06-reverse-engineering-guide.md](06-reverse-engineering-guide.md) | USB capture methodology and analysis workflow |
-| [07-architecture-decision.md](07-architecture-decision.md) | PAPPL + libgutenprint architecture rationale |
+| [07-architecture-decision.md](07-architecture-decision.md) | PAPPL + libgutenprint architecture; **locked mono/color print paths** |
 | [08-feature-matrix.md](08-feature-matrix.md) | Canon original vs v1 target vs stretch goals |
 | [09-test-results.md](09-test-results.md) | Test matrix results (updated during development) |
 | [10-release-process.md](10-release-process.md) | Product SemVer, changelog, and GitHub Release packaging |
@@ -59,5 +59,6 @@ Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-do
 
 | Version | Date | Notes |
 |---------|------|-------|
+| 1.1.1 | 2026-08-24 | Note locked mono/color paths on ADR 07 |
 | 1.1.0 | 2026-08-22 | Index `11-documentation-standards.md`; how-to steps for doc SemVer |
 | 1.0.0 | 2026-08-22 | Index of research docs; linked documentation standards and SemVer convention |
