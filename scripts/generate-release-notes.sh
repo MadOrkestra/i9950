@@ -54,7 +54,7 @@ ${NOTES}
 
 \`\`\`bash
 sudo installer -pkg ${PKG} -target /
-launchctl load ~/Library/LaunchAgents/com.i9950.printer-app.plist
+launchctl bootstrap gui/$(id -u) /Library/LaunchAgents/com.i9950.printer-app.plist
 \`\`\`
 
 Production distribution still requires Developer ID signing and notarization. See \`packaging/macos/INSTALL.md\` and \`docs/10-release-process.md\`.

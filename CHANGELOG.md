@@ -8,6 +8,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-24
+
 ### Added
 
 - GitHub Actions workflow to build and publish the macOS `.pkg` on `v*` tags
@@ -26,19 +28,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Mono polarity: do not use Whitescale with Canon K (Job 37 invert); normalize 0=white → Grayscale
 - Color geometry stretch / right-edge clip from multilevel medium mode; use draft 1-bit color mode
+- LaunchAgent plist used invalid `serve` subcommand; corrected to `server`
 
-### Verified (Phase 1–2)
+### Verified
 
 - Multi-page mono printable gate: Jobs 55/56 (PAGE 1/2 + PAGE 2/2), last-page flush OK
 - CUPS → IPP single page: Job 57 via `lp -d i9950dev`
 - CUPS PDF → IPP 2-page: Job 58 via `lp -d i9950dev` + `t-printable-a4-600.pdf`
 - CUPS 10-page PDF stress: Job 59, user confirmed all 10 pages (T14)
 - CUPS color PDF: Job 60, user confirmed swatches (T15)
-- Package smoke: system `sudo installer` confirmed; `/usr/local/bin/i9950-printer-app` + LaunchAgent plist installed
+- Package + system install: T16 — `sudo installer`, LaunchAgent from `/Library/LaunchAgents/`
 
-### Fixed
+### Known limitations
 
-- LaunchAgent plist used invalid `serve` subcommand; corrected to `server`
+- Hardware validation is **A4 plain @ 600 dpi** only; higher DPI, borderless, photo media, and additional paper sizes are listed but not gated
+- Color output uses draft 1-bit CMYK (lighter ink); full multilevel 8-ink modes break geometry on i9950
+- PDF printing works via **macOS CUPS** (`application/pdf` → PWG raster); direct IPP `application/pdf` submit is not supported
+- Package is unsigned; Gatekeeper may require an override until Developer ID signing and notarization are added
 
 ## [0.1.0] - 2026-08-22
 
