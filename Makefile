@@ -3,7 +3,7 @@
 # Copyright (C) 2026 i9950 driver project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-VERSION     ?= 0.1.0
+VERSION     ?= 0.2.0
 ARCH        ?= arm64
 BUILD_DIR   ?= build
 PAPPL_DIR   := third_party/pappl
