@@ -13,10 +13,13 @@ make clean all VERSION="$VERSION"
 
 rm -rf "$PKGROOT"
 mkdir -p "$PKGROOT/usr/local/bin"
+mkdir -p "$PKGROOT/usr/local/share/i9950"
 mkdir -p "$PKGROOT/Library/LaunchAgents"
 
 install -m 755 "$ROOT/build/i9950-printer-app" "$PKGROOT/usr/local/bin/"
 install -m 755 "$ROOT/build/i9950-tool" "$PKGROOT/usr/local/bin/"
+install -m 644 "$ROOT/build/share/i9950/lucide-printer-template.png" \
+  "$PKGROOT/usr/local/share/i9950/"
 install -m 644 "$ROOT/packaging/macos/com.i9950.printer-app.plist" \
   "$PKGROOT/Library/LaunchAgents/"
 

@@ -112,7 +112,11 @@ lp -d i9950dev \
   build/t-printable-a4-600.png
 ```
 
-Queue `i9950dev` → `ipp://127.0.0.1:8502/ipp/print/Canon_i9950_(USB)` (port must match running server). **PASS:** Job **57** (`i9950dev-69`).
+Queue `i9950dev` → `ipp://127.0.0.1:8501/ipp/print/Canon_i9950_(USB)` (installed LaunchAgent default). Dev server may use another port (e.g. 8502) — update with:
+
+```bash
+lpadmin -p i9950dev -v 'ipp://127.0.0.1:8501/ipp/print/Canon_i9950_(USB)'
+```
 
 ## Ink-efficient hardware policy
 

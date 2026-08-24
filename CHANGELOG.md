@@ -8,6 +8,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-24
+
+### Added
+
+- macOS menu bar status item with Lucide printer template icon (`server` mode)
+
+### Fixed
+
+- Version string now uses Makefile `VERSION` instead of hardcoded `0.1.0`
+- Menu bar icon rendered as a white square (template PNG must be black on transparent)
+- Duplicate menu bar icons (PAPPL default folder icon plus custom icon)
+
 ## [0.2.0] - 2026-08-24
 
 ### Added

@@ -1,0 +1,51 @@
+diff --git a/pappl/system-status-macos.m b/pappl/system-status-macos.m
+index 03a2b0d..478ded8 100644
+--- a/pappl/system-status-macos.m
++++ b/pappl/system-status-macos.m
+@@ -114,9 +114,21 @@ + (id)newStatusUI:(pappl_system_t *)system
+ 
+     pthread_rwlock_init(&ui->rwlock, NULL);
+ 
+-    // Create the menu bar icon...
+-    ui->statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:
+-NSSquareStatusItemLength];
++    // Create the menu bar icon (skip when i9950 provides its own status item)...
++    if (getenv("I9950_CUSTOM_MENU_BAR"))
++    {
++      ui->statusItem = nil;
++    }
++    else
++    {
++      ui->statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:
++  NSSquareStatusItemLength];
++
++      // Set the image for the item...
++      NSImage *image              = [NSApp.applicationIconImage copy];
++      image.size                  = ui->statusItem.button.frame.size;
++      ui->statusItem.button.image = image;
++    }
+ 
+     // Create the menu bar menus...
+     ui->name = [NSString stringWithUTF8String:system->versions[0].name];
+@@ -124,11 +136,6 @@ + (id)newStatusUI:(pappl_system_t *)system
+     ui->mainMenu = [[NSMenu alloc] initWithTitle:ui->name];
+     [ui->mainMenu addItemWithTitle:[NSString stringWithFormat:@"About %@",ui->name] action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
+ 
+-    // Set the image for the item...
+-    NSImage *image              = [NSApp.applicationIconImage copy];
+-    image.size                  = ui->statusItem.button.frame.size;
+-    ui->statusItem.button.image = image;
+-
+     // Build the menu...
+     [ui updateMenu];
+   }
+@@ -194,6 +201,9 @@ - (void)updateMenu
+   char	sysname[256];			// System name
+ 
+ 
++  if (!statusItem)
++    return;
++
+ //  NSLog(@"******** updateMenu");
+ 
+   // Start with the system name...

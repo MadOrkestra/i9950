@@ -64,6 +64,7 @@ jobs:
         run: |
           git clone --depth 1 --branch v1.4.8 \
             https://github.com/michaelrsweet/pappl.git third_party/pappl
+          patch -d third_party/pappl -p1 -N < packaging/patches/pappl-i9950-menu-bar.patch
           git clone --depth 1 \
             https://github.com/koenkooi/gutenprint.git third_party/gutenprint
 

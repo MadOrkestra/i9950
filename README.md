@@ -41,6 +41,8 @@ Uses Gutenprint `600x600dpi_draftmono` + `PrintingMode=BW` + `InputImageType=Gra
 
 Uses Gutenprint `600x600dpi_draft` (1-bit CMYK). Do **not** use medium `600x600dpi` (4-bit) — it stretches X and clips the right margin.
 
+When running `server` on macOS, a **menu bar icon** (Lucide printer, template image for light/dark) opens configuration or quit. Disable with `I9950_NO_MENU_BAR=1`.
+
 **Multi-page PDF** (via CUPS — Preview, Pages, print dialog):
 
 ```bash
