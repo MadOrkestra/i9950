@@ -7,7 +7,7 @@ make package
 sudo installer -pkg build/i9950-printer-app.pkg -target /
 ```
 
-Loads LaunchAgent `com.i9950.printer-app` to run `i9950-printer-app serve` at login.
+Loads LaunchAgent `com.i9950.printer-app` to run `i9950-printer-app server` at login.
 
 ## GitHub releases
 

@@ -1,6 +1,6 @@
 # Test Results — Canon i9950 macOS Driver
 
-> **Doc version:** `1.3.0` · **Last updated:** 2026-08-24
+> **Doc version:** `1.4.2` · **Last updated:** 2026-08-24
 
 ## Test Environment
 
@@ -72,6 +72,34 @@ lp -d i9950dev \
 
 **PASS:** Job **58** (`i9950dev-70`), `job-impressions-completed=2`; user confirmed both pages correct (2026-08-24).
 
+**10-page stress (T14):**
+
+```bash
+lp -d i9950dev \
+  -o media=iso_a4_210x297mm \
+  -o media-type=stationery \
+  -o print-color-mode=monochrome \
+  -o printer-resolution=600dpi \
+  -o print-scaling=none \
+  build/t08-10page-mono-sparse.pdf
+```
+
+Fixture: vector sparse mono PDF (`scripts/generate-ink-efficient-tests.py`). **PASS:** Job **59** (`i9950dev-71`), `job-impressions-completed=10`; user confirmed all 10 sheets correct (2026-08-24).
+
+**Color PDF (T15):**
+
+```bash
+lp -d i9950dev \
+  -o media=iso_a4_210x297mm \
+  -o media-type=stationery \
+  -o print-color-mode=color \
+  -o printer-resolution=600dpi \
+  -o print-scaling=none \
+  build/t-color-swatches-a4-600.pdf
+```
+
+Fixture: `scripts/generate_color_swatches_gate.py` (also `.png`/`.jpg`). **PASS:** Job **60** (`i9950dev-72`), `600x600dpi_draft`, `mono=0`; user confirmed swatches + frame correct (2026-08-24).
+
 Direct `./build/i9950-printer-app submit … .pdf` still fails (`application/pdf` unsupported).
 
 ### CUPS queue smoke (single-page raster)
@@ -95,6 +123,7 @@ Regenerate fixtures:
 ```bash
 build/.venv-fixtures/bin/python scripts/generate_printable_gate.py
 build/.venv-fixtures/bin/python scripts/generate_color_swatches_gate.py
+python3 scripts/generate-ink-efficient-tests.py   # 10-page sparse PDF
 ```
 
 ### Primary area diagnostic (`build/t-diag-a4-mono.jpg`)
@@ -119,7 +148,9 @@ Aliases: `build/t05-a4-mono-sparse.jpg` (same file).
 | 2 | `build/t-color-swatches-a4-600.jpg` | Locked color geometry gate | Medium |
 | 3 | `build/t-printable-a4-600-p1.png` + `p2.png` | Multi-page mono flush via CLI (T08) | Low |
 | 4 | `build/t-printable-a4-600.pdf` | Multi-page mono via CUPS PDF path (T13) | Low |
-| 5 | `build/t08-2page-mono-sparse.pdf` | Legacy sparse 2-page (superseded) | Very low |
+| 5 | `build/t08-10page-mono-sparse.pdf` | 10-page mono flush via CUPS (T14) | Very low |
+| 6 | `build/t-color-swatches-a4-600.pdf` | Color swatches via CUPS PDF (T15) | Medium |
+| 7 | `build/t08-2page-mono-sparse.pdf` | Legacy sparse 2-page (superseded) | Very low |
 | Later | Photo / glossy / high multilevel modes | T04/T06 | High — blocked until draft color quality upgraded |
 
 Always submit mono with `-o print-color-mode=monochrome`. Color with `-o print-color-mode=color`.
@@ -152,7 +183,10 @@ Always submit mono with `-o print-color-mode=monochrome`. Color with `-o print-c
 | T07 | A3+ 13×19 2400dpi | — | BLOCKED | Defer (paper + ink) |
 | T08 | Multi-page mono flush (printable gate) | Sequoia 15.7.9 | **PASS** | Jobs **55** (PAGE 1 OF 2) + **56** (PAGE 2 OF 2) via CLI submit; user confirmed both pages printed correctly. Last-page flush OK. |
 | T12 | CUPS → IPP smoke (single page) | Sequoia 15.7.9 | **PASS** | Job **57**: `lp -d i9950dev` mono `t-printable-a4-600.png` (CUPS request `i9950dev-69`) completed. |
-| T13 | CUPS PDF → IPP (2-page printable gate) | Sequoia 15.7.9 | **PASS** | Job **58**: `lp -d i9950dev` + `print-scaling=none` on `t-printable-a4-600.pdf` (`i9950dev-70`); `job-impressions-completed=2`; user confirmed both pages correct. Proper macOS PDF path. |
+| T13 | CUPS PDF → IPP (2-page printable gate) | Sequoia 15.7.9 | **PASS** | Job **58**: `lp -d i9950dev` + `print-scaling=none` on `t-printable-a4-600.pdf` (`i9950dev-70`); `job-impressions-completed=2`; user confirmed both pages correct. |
+| T14 | CUPS PDF → IPP (10-page stress) | Sequoia 15.7.9 | **PASS** | Job **59**: `t08-10page-mono-sparse.pdf` (`i9950dev-71`); `job-impressions-completed=10`; user confirmed all 10 sheets. v1.0 criterion #4 met. |
+| T15 | CUPS color PDF → IPP | Sequoia 15.7.9 | **PASS** | Job **60**: `t-color-swatches-a4-600.pdf` + `print-color-mode=color` (`i9950dev-72`); user confirmed swatches + frame on paper. |
+| T16 | Package + LaunchAgent smoke | Sequoia 15.7.9 | **PASS** | `make package` OK; `sudo installer -pkg build/i9950-printer-app.pkg -target /` installed `/usr/local/bin/i9950-printer-app` + `/Library/LaunchAgents/com.i9950.printer-app.plist` (`server` subcommand). LaunchAgent running from system plist; dev smoke plist removed. USB `04a9:1090` detected. |
 | T09 | Grayscale document | Sequoia 15.7.9 | PASS* | Job 5 completed mono. Prefer sparse fixtures; confirm visually next. |
 | T10 | Sleep/wake reconnect | — | BLOCKED | |
 | T11–T13 | Ventura/Sonoma/Sequoia | Sequoia build OK | PARTIAL | Build verified on Sequoia only |
@@ -169,6 +203,7 @@ Always submit mono with `-o print-color-mode=monochrome`. Color with `-o print-c
 | 2026-08-24 | Color swatches: X stretch, right frame missing | Medium `600x600dpi` is 4-bit C6; use 1-bit `600x600dpi_draft` (IP8500) like mono | Job 52/54 PASS |
 | 2026-08-24 | Phase 1: doc sync + multipage/CUPS gates | Feature matrix MVP section; T05f/T08/T12 | T08/T12 PASS (Jobs 55–57) |
 | 2026-08-24 | CUPS PDF path for 2-page printable gate | Document CUPS PDF→PWG workflow; `-o print-scaling=none` | T13 PASS (Job 58); user confirmed both pages |
+| 2026-08-24 | 10-page + color PDF + package smoke | T14/T15/T16; plist `serve`→`server`; color PDF fixture | T14/T15 PASS (Jobs 59/60); T16 system `sudo installer` confirmed |
 
 ## How to Record Results
 
@@ -185,6 +220,9 @@ Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-do
 
 | Version | Date | Notes |
 |---------|------|-------|
+| 1.4.2 | 2026-08-24 | T16 PASS: system `sudo installer` confirmed |
+| 1.4.1 | 2026-08-24 | T14/T15 visual PASS confirmed (Jobs 59/60) |
+| 1.4.0 | 2026-08-24 | T14/T15 CUPS PDF gates; package smoke; color PDF fixture |
 | 1.3.0 | 2026-08-24 | T13 PASS: CUPS PDF 2-page path (Job 58); locked PDF submit recipe |
 | 1.2.0 | 2026-08-24 | Phase 1: Jobs 53/54 regression, multipage/CUPS submit recipes, T08/T12 |
 | 1.1.0 | 2026-08-24 | Locked mono (Job 38) and color draft (Job 52) submit paths; T05d/T05e |

@@ -14,6 +14,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `scripts/release.sh` for end-to-end release (build, tag, push, notes + asset on GitHub)
 - Document SemVer + version-history template for all `docs/` files ([docs/11-documentation-standards.md](docs/11-documentation-standards.md))
 - Printable-area and color-swatch gate fixtures (`scripts/generate_printable_gate.py`, `scripts/generate_color_swatches_gate.py`)
+- Color swatch PDF output for CUPS color PDF gate (`t-color-swatches-a4-600.pdf`)
 
 ### Changed
 
@@ -31,6 +32,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Multi-page mono printable gate: Jobs 55/56 (PAGE 1/2 + PAGE 2/2), last-page flush OK
 - CUPS → IPP single page: Job 57 via `lp -d i9950dev`
 - CUPS PDF → IPP 2-page: Job 58 via `lp -d i9950dev` + `t-printable-a4-600.pdf`
+- CUPS 10-page PDF stress: Job 59, user confirmed all 10 pages (T14)
+- CUPS color PDF: Job 60, user confirmed swatches (T15)
+- Package smoke: system `sudo installer` confirmed; `/usr/local/bin/i9950-printer-app` + LaunchAgent plist installed
+
+### Fixed
+
+- LaunchAgent plist used invalid `serve` subcommand; corrected to `server`
 
 ## [0.1.0] - 2026-08-22
 

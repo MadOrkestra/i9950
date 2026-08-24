@@ -254,6 +254,44 @@ def write_jpeg(path: Path, img: Image.Image) -> None:
     _patch_jfif_dpi(path)
 
 
+def write_pdf(path: Path, img: Image.Image) -> None:
+    """Single-page A4 PDF embedding RGB raster (CUPS color PDF gate)."""
+    assert img.mode == "RGB" and img.size == (W, H)
+    pw, ph = 595.27, 841.89
+    compressed = zlib.compress(img.tobytes(), 9)
+    content = f"q\n{pw:.2f} 0 0 {ph:.2f} 0 0 cm\n/Im0 Do\nQ\n".encode()
+    objs = [
+        b"<< /Type /Catalog /Pages 2 0 R >>\n",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.27 841.89] "
+        b"/Contents 4 0 R /Resources << /XObject << /Im0 5 0 R >> >> >>\n",
+        f"<< /Length {len(content)} >>\nstream\n".encode() + content + b"endstream\n",
+        (
+            f"<< /Type /XObject /Subtype /Image /Width {W} /Height {H} "
+            f"/ColorSpace /DeviceRGB /BitsPerComponent 8 "
+            f"/Filter /FlateDecode /Length {len(compressed)} >>\n"
+            f"stream\n"
+        ).encode()
+        + compressed
+        + b"\nendstream\n",
+    ]
+    out = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offs = [0]
+    for i, body in enumerate(objs, 1):
+        offs.append(len(out))
+        out += f"{i} 0 obj\n".encode() + body + b"endobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objs) + 1}\n".encode()
+    out += b"0000000000 65535 f \n"
+    for off in offs[1:]:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += (
+        f"trailer << /Size {len(objs) + 1} /Root 1 0 R >>\n"
+        f"startxref\n{xref}\n%%EOF\n"
+    ).encode()
+    path.write_bytes(out)
+
+
 def self_check(img: Image.Image) -> None:
     assert MARGIN == 118
     assert SQUARE == 472
@@ -291,13 +329,16 @@ def main() -> int:
 
     png = BUILD / "t-color-swatches-a4-600.png"
     jpg = BUILD / "t-color-swatches-a4-600.jpg"
+    pdf = BUILD / "t-color-swatches-a4-600.pdf"
     write_png(png, page)
     write_jpeg(jpg, page)
+    write_pdf(pdf, page)
 
     print(f"MARGIN={MARGIN}px frame+corners+type baseline; SQUARE={SQUARE}px ({SQUARE_MM}mm)")
     print(f"swatches={len(SWATCHES)}: " + ", ".join(n for n, _ in SWATCHES))
     print(f"{png} ({png.stat().st_size} bytes)")
     print(f"{jpg} ({jpg.stat().st_size} bytes)")
+    print(f"{pdf} ({pdf.stat().st_size} bytes)")
     print("self-check OK")
     return 0
 

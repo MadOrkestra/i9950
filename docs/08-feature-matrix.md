@@ -103,15 +103,15 @@ document-format-supported: image/pwg-raster (PDF via CUPS filter chain, not dire
 
 ```
 pwg-raster-document-resolution-supported: 600dpi, 1200dpi, 2400dpi, 4800dpi
-application/pdf on IPP (optional; CUPS PDF→PWG path PASS — T13 Job 58)
+application/pdf on IPP (optional; CUPS PDF→PWG path PASS — T13–T15 Jobs 58–60)
 ```
 
 ## Success Criteria (v1.0 Release)
 
-1. Install `.pkg` on macOS Ventura, Sonoma, or Sequoia
+1. Install `.pkg` on macOS Ventura, Sonoma, or Sequoia — **PASS** (T16, system install confirmed)
 2. Printer auto-discovered when USB connected
 3. Print 4×6 borderless photo at 2400 dpi — correct colors, full bleed
-4. Print 10-page PDF — all pages complete, no power cycle needed
+4. Print 10-page PDF — all pages complete, no power cycle needed — **PASS** (T14 Job 59, user confirmed)
 5. Print 13×19 at 2400 dpi — full page, no truncation
 
 See [09-test-results.md](09-test-results.md) for test execution status.

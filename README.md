@@ -9,7 +9,7 @@ Modern macOS printer driver for the Canon Bubble Jet **i9950** (USB `04A9:1090`)
 | Research docs | Complete — see [docs/](docs/) |
 | Driver source | Builds; locked mono + color draft paths |
 | USB capture baselines | Partial — live USB print jobs exercised |
-| Physical print validation | Mono + color gates PASS; multi-page mono + CUPS PDF PASS (Jobs 55–58) |
+| Physical print validation | Mono + color gates PASS; CUPS PDF 2/10-page + color PDF (Jobs 58–60); package smoke PASS |
 
 The driver is designed to work without a kernel extension. When you connect the printer, macOS should discover it via Bonjour after starting the Printer Application.
 
