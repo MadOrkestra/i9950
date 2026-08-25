@@ -1,8 +1,20 @@
 # Canon i9950 macOS Printer Application
 
+> **Work in progress** — This project is under active development. Releases are experimental and not ready for general use. Expect breaking changes, incomplete features, and limited hardware validation.
+
 Modern macOS printer driver for the Canon Bubble Jet **i9950** (USB `04A9:1090`).
 
 The driver runs as a userspace Printer Application — no kernel extension required. Connect the printer via USB, install the package, and print from any macOS app through the standard print dialog.
+
+## Disclaimer
+
+This is an **independent, community-driven project**. It is **not affiliated with, endorsed by, or supported by Canon Inc.**
+
+- Software is provided **as-is**, without warranty of any kind.
+- Use at your own risk. Test on non-critical jobs before relying on it for important prints.
+- The installer package is **unsigned** and has **not** been notarized by Apple.
+- Hardware validation is **limited** (see [Known limitations](#known-limitations)). Higher resolutions, photo media, borderless printing, and large paper sizes are not fully verified.
+- Bug reports and contributions are welcome; see [docs/12-developer-guide.md](docs/12-developer-guide.md) for building from source.
 
 ## Requirements
 
