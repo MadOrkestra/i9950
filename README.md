@@ -1,117 +1,54 @@
 # Canon i9950 macOS Printer Application
 
-Modern macOS printer driver for the Canon Bubble Jet **i9950** (USB `04A9:1090`), built as a [PAPPL](https://github.com/michaelrsweet/pappl) Printer Application with Gutenprint's `bjc-i9950` encoder.
+Modern macOS printer driver for the Canon Bubble Jet **i9950** (USB `04A9:1090`).
 
-## Status
-
-| Component | Status |
-|-----------|--------|
-| Research docs | Complete — see [docs/](docs/) |
-| Driver source | Builds; locked mono + color draft paths |
-| USB capture baselines | Partial — live USB print jobs exercised |
-| Physical print validation | Mono + color gates PASS; CUPS PDF 2/10-page + color PDF (Jobs 58–60); package smoke PASS |
-
-The driver is designed to work without a kernel extension. When you connect the printer, macOS should discover it via Bonjour after starting the Printer Application.
-
-## Locked print paths
-
-Do not change encoder Resolution/polarity without a new physical gate. Details:
-[docs/07-architecture-decision.md](docs/07-architecture-decision.md#locked-print-paths-physical-gate).
-
-**Black / greyscale only** (`print-color-mode=monochrome`):
-
-```bash
-./build/i9950-printer-app server -o log-file=build/i9950-server.log -o log-level=debug
-./build/i9950-printer-app submit -d "Canon i9950 (USB)" \
-  -o media=iso_a4_210x297mm -o media-type=stationery \
-  -o print-color-mode=monochrome -o printer-resolution=600dpi \
-  build/t-printable-a4-600.png
-```
-
-Uses Gutenprint `600x600dpi_draftmono` + `PrintingMode=BW` + `InputImageType=Grayscale` (0=white). K ink only.
-
-**Color** (`print-color-mode=color`):
-
-```bash
-./build/i9950-printer-app submit -d "Canon i9950 (USB)" \
-  -o media=iso_a4_210x297mm -o media-type=stationery \
-  -o print-color-mode=color -o printer-resolution=600dpi \
-  build/t-color-swatches-a4-600.jpg
-```
-
-Uses Gutenprint `600x600dpi_draft` (1-bit CMYK). Do **not** use medium `600x600dpi` (4-bit) — it stretches X and clips the right margin.
-
-When running `server` on macOS, a **menu bar icon** (Lucide printer, template image for light/dark) opens configuration or quit. Disable with `I9950_NO_MENU_BAR=1`.
-
-**Multi-page PDF** (via CUPS — Preview, Pages, print dialog):
-
-```bash
-lp -d i9950dev \
-  -o media=iso_a4_210x297mm -o media-type=stationery \
-  -o print-color-mode=monochrome -o printer-resolution=600dpi \
-  -o print-scaling=none \
-  build/t-printable-a4-600.pdf
-```
-
-CUPS converts PDF → PWG raster @ 600 dpi, then sends to the printer app. Direct `i9950-printer-app submit … .pdf` is not supported.
+The driver runs as a userspace Printer Application — no kernel extension required. Connect the printer via USB, install the package, and print from any macOS app through the standard print dialog.
 
 ## Requirements
 
-- macOS 11+ (Ventura/Sonoma/Sequoia target)
-- Xcode Command Line Tools
-- Homebrew: `libusb`, `openssl@3`, `jpeg-turbo`, `libpng`, `gettext`, `libtool`, `autoconf`, `automake`
+- macOS 11 or later (Ventura, Sonoma, or Sequoia)
+- Canon i9950 connected via USB 2.0 Hi-Speed
 
-## Build
+## Install
 
-```bash
-cd i9950
-make deps    # builds vendored PAPPL + libgutenprint (first time only)
-make         # produces build/i9950-printer-app and build/i9950-tool
-make test    # unit tests (no printer needed)
-```
-
-## Run (development)
+1. Download the latest **`i9950-printer-app-X.Y.Z-macos.pkg`** from [GitHub Releases](https://github.com/MadOrkestra/i9950/releases).
+2. Install the package:
 
 ```bash
-./build/i9950-printer-app server
+sudo installer -pkg i9950-printer-app-X.Y.Z-macos.pkg -target /
+launchctl bootstrap gui/$(id -u) /Library/LaunchAgents/com.i9950.printer-app.plist
 ```
 
-Then add the printer in **System Settings → Printers** (should appear via IPP/Bonjour on localhost).
+Replace `X.Y.Z` with the release version (for example `0.2.1`).
 
-## Install (unsigned dev package)
+3. Connect the i9950 via USB.
+4. Open **System Settings → Printers & Scanners** and add **Canon i9950 (USB)** when it appears (IPP/Bonjour on localhost).
 
-```bash
-make package
-sudo installer -pkg build/i9950-printer-app.pkg -target /
-launchctl load ~/Library/LaunchAgents/com.i9950.printer-app.plist
-```
+The Printer Application starts at login and shows a menu bar icon for configuration or quit.
 
-## Maintenance tool
+## Print
 
-```bash
-# Without printer:
-./build/i9950-tool --dry-run list
-./build/i9950-tool --dry-run nozzle-check
+Use the normal macOS print dialog from Preview, Pages, Safari, or any app. Supported today:
 
-# With printer connected:
-./build/i9950-tool list
-```
+- A4 plain paper @ 600 dpi
+- Monochrome and color
+- Multi-page PDF (via macOS CUPS)
 
-## When you get the printer
+## Known limitations
 
-1. Connect via USB 2.0 Hi-Speed
-2. Verify: `system_profiler SPUSBDataType | grep -i 9950`
-3. Run capture workflow: [docs/06-reverse-engineering-guide.md](docs/06-reverse-engineering-guide.md)
-4. Print test page and update [docs/09-test-results.md](docs/09-test-results.md)
+- Package is **unsigned** — Gatekeeper may warn; allow in **System Settings → Privacy & Security** if prompted.
+- Validated on **A4 plain @ 600 dpi** only; higher resolutions, borderless, photo media, and large paper sizes are listed but not fully validated yet.
+- Color uses draft 1-bit CMYK (lighter ink than photo modes).
 
-## Releases
+See [CHANGELOG.md](CHANGELOG.md) for version history and [docs/08-feature-matrix.md](docs/08-feature-matrix.md) for the full capability roadmap.
 
-Versioning, changelog requirements, and GitHub Release contents: [docs/10-release-process.md](docs/10-release-process.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+## Documentation
 
-```bash
-./scripts/release.sh X.Y.Z          # build .pkg, tag, push, publish notes + asset
-./scripts/release.sh X.Y.Z --dry-run
-```
+| Doc | Description |
+|-----|-------------|
+| [docs/README.md](docs/README.md) | Research and reference index |
+| [docs/12-developer-guide.md](docs/12-developer-guide.md) | Build from source, dev run, hardware tests |
+| [docs/10-release-process.md](docs/10-release-process.md) | Versioning and release workflow |
 
 ## License
 

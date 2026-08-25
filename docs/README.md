@@ -1,6 +1,6 @@
 # Canon i9950 Driver Research Documentation
 
-> **Doc version:** `1.1.1` · **Last updated:** 2026-08-24
+> **Doc version:** `1.2.0` · **Last updated:** 2026-08-25
 
 Research and reference material for developing a modern macOS USB printer driver for the Canon Bubble Jet i9950.
 
@@ -19,6 +19,7 @@ Research and reference material for developing a modern macOS USB printer driver
 | [09-test-results.md](09-test-results.md) | Test matrix results (updated during development) |
 | [10-release-process.md](10-release-process.md) | Product SemVer, changelog, and GitHub Release packaging |
 | [11-documentation-standards.md](11-documentation-standards.md) | Doc SemVer rules, header + version-history template |
+| [12-developer-guide.md](12-developer-guide.md) | Build from source, dev run, locked paths, hardware tests |
 | [sources/bibliography.md](sources/bibliography.md) | Full source list with URLs and access dates |
 
 ## Related Project Directories
@@ -42,6 +43,7 @@ i9950/
 5. Refer to **07** and **08** during implementation planning.
 6. Follow **11** for SemVer and version history on every doc (new or updated).
 7. Use **10** when cutting a software release (`CHANGELOG.md` + GitHub).
+8. Use **12** to build from source or run hardware validation gates.
 
 ## Key Facts (Quick Reference)
 
@@ -59,6 +61,7 @@ Document SemVer (`MAJOR.MINOR.PATCH`). See [11-documentation-standards.md](11-do
 
 | Version | Date | Notes |
 |---------|------|-------|
+| 1.2.0 | 2026-08-25 | Index `12-developer-guide.md`; build/dev content moved from root README |
 | 1.1.1 | 2026-08-24 | Note locked mono/color paths on ADR 07 |
 | 1.1.0 | 2026-08-22 | Index `11-documentation-standards.md`; how-to steps for doc SemVer |
 | 1.0.0 | 2026-08-22 | Index of research docs; linked documentation standards and SemVer convention |

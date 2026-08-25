@@ -1,13 +1,12 @@
 # macOS packaging notes
 
-## Development install (unsigned)
+## End-user install (GitHub Release)
 
-```bash
-make package
-sudo installer -pkg build/i9950-printer-app.pkg -target /
-```
+Download `i9950-printer-app-X.Y.Z-macos.pkg` from [GitHub Releases](https://github.com/MadOrkestra/i9950/releases). Install steps are in the root [README.md](../../README.md).
 
-Loads LaunchAgent `com.i9950.printer-app` to run `i9950-printer-app server` at login.
+## Local build install (unsigned)
+
+For developers building from source, see [docs/12-developer-guide.md](../../docs/12-developer-guide.md).
 
 ## GitHub releases
 
