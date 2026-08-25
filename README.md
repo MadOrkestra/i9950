@@ -1,5 +1,8 @@
 # Canon i9950 macOS Printer Application
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/MadOrkestra)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/madorkestra)
+
 > **Work in progress** — This project is under active development. Releases are experimental and not ready for general use. Expect breaking changes, incomplete features, and limited hardware validation.
 
 Modern macOS printer driver for the Canon Bubble Jet **i9950** (USB `04A9:1090`).
